@@ -1,0 +1,145 @@
+"""Kafka Consumer client wrapper for consumer group operations."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from confluent_kafka import Consumer, KafkaException, TopicPartition
+from confluent_kafka.admin import AdminClient
+
+from oci_kafka_mcp.config import KafkaConfig
+
+logger = logging.getLogger(__name__)
+
+
+class KafkaConsumerClient:
+    """Wrapper for Kafka consumer group operations."""
+
+    def __init__(self, config: KafkaConfig) -> None:
+        self._config = config
+        self._admin: AdminClient | None = None
+
+    def _get_admin(self) -> AdminClient:
+        """Get or create AdminClient for consumer group operations."""
+        if self._admin is None:
+            confluent_config = self._config.to_confluent_config()
+            confluent_config["client.id"] = "oci-kafka-mcp-consumer-admin"
+            self._admin = AdminClient(confluent_config)
+        return self._admin
+
+    def list_consumer_groups(self) -> dict[str, Any]:
+        """List all consumer groups."""
+        admin = self._get_admin()
+        future = admin.list_consumer_groups()
+
+        try:
+            result = future.result()
+            groups = []
+            for group in result.valid:
+                groups.append({
+                    "group_id": group.group_id,
+                    "is_simple": group.is_simple_consumer_group,
+                    "state": str(group.state),
+                })
+            return {
+                "group_count": len(groups),
+                "groups": groups,
+            }
+        except KafkaException as e:
+            return {"error": f"Failed to list consumer groups: {e}"}
+
+    def describe_consumer_group(self, group_id: str) -> dict[str, Any]:
+        """Get detailed information about a consumer group."""
+        admin = self._get_admin()
+        futures = admin.describe_consumer_groups([group_id])
+
+        try:
+            result = futures[0].result()
+            members = []
+            for member in result.members:
+                assignment = []
+                if member.assignment:
+                    assignment = [
+                        {"topic": tp.topic, "partition": tp.partition}
+                        for tp in member.assignment.topic_partitions
+                    ]
+                members.append({
+                    "member_id": member.member_id,
+                    "client_id": member.client_id,
+                    "host": member.host,
+                    "assignment": assignment,
+                })
+
+            return {
+                "group_id": result.group_id,
+                "state": str(result.state),
+                "coordinator": {
+                    "id": result.coordinator.id,
+                    "host": result.coordinator.host,
+                    "port": result.coordinator.port,
+                },
+                "partition_assignor": result.partition_assignor,
+                "member_count": len(members),
+                "members": members,
+            }
+        except KafkaException as e:
+            return {"error": f"Failed to describe consumer group '{group_id}': {e}"}
+
+    def get_consumer_lag(self, group_id: str) -> dict[str, Any]:
+        """Get consumer lag for all partitions assigned to a consumer group."""
+        admin = self._get_admin()
+
+        # Get committed offsets for the group
+        futures = admin.list_consumer_group_offsets(
+            [{"group_id": group_id}]
+        )
+
+        try:
+            result = futures[0].result()
+        except (KafkaException, Exception) as e:
+            return {"error": f"Failed to get offsets for group '{group_id}': {e}"}
+
+        # Create a temporary consumer to get end offsets (high watermarks)
+        consumer_config = self._config.to_confluent_config()
+        consumer_config["group.id"] = f"oci-mcp-lag-check-{group_id}"
+        consumer_config["enable.auto.commit"] = "false"
+        consumer = Consumer(consumer_config)
+
+        lag_details = []
+        total_lag = 0
+
+        try:
+            for tp in result.topic_partitions:
+                if tp.error is not None:
+                    continue
+
+                committed_offset = tp.offset
+                # Get high watermark (end offset)
+                low, high = consumer.get_watermark_offsets(
+                    TopicPartition(tp.topic, tp.partition), timeout=5
+                )
+
+                lag = max(0, high - committed_offset) if committed_offset >= 0 else high - low
+                total_lag += lag
+
+                lag_details.append({
+                    "topic": tp.topic,
+                    "partition": tp.partition,
+                    "committed_offset": committed_offset,
+                    "end_offset": high,
+                    "lag": lag,
+                })
+        finally:
+            consumer.close()
+
+        return {
+            "group_id": group_id,
+            "total_lag": total_lag,
+            "partition_count": len(lag_details),
+            "partitions": lag_details,
+        }
+
+    def close(self) -> None:
+        """Clean up resources."""
+        self._admin = None
