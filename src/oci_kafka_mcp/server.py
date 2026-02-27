@@ -48,7 +48,7 @@ def create_server(allow_writes: bool = False) -> FastMCP:
     # Initialize the MCP server
     mcp = FastMCP(
         "OCI Kafka MCP Server",
-        description=(
+        instructions=(
             "AI-native control interface for OCI Streaming with Apache Kafka. "
             "Provides structured tools for cluster, topic, consumer, and "
             "observability operations."

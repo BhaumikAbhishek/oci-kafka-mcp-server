@@ -253,7 +253,7 @@ oci-kafka-mcp-server/
 | 1.12 | Tool: `oci_kafka_get_partition_skew` | ✅ Done | |
 | 1.13 | Tool: `oci_kafka_detect_under_replicated_partitions` | ✅ Done | |
 | 1.14 | Unit tests for all read tools | ✅ Done | 41 tests, all passing |
-| 1.15 | End-to-end test with local Kafka | ⬜ Not Started | Needs Docker Kafka running |
+| 1.15 | End-to-end test with local Kafka | ✅ Done | Podman + apache/kafka:3.9.0, all tools verified |
 
 ### Sprint 2: Write Tools + Policy Guard (Week 5–6)
 
@@ -351,27 +351,55 @@ oci-kafka-mcp-server/
 
 ### Prerequisites
 - Python 3.11+
-- Docker Desktop (for local Kafka)
-- `uv` package manager (recommended) or `pip`
+- Java 17+ and Kafka via Homebrew (for local Kafka — no Docker required)
+- `pip` or `uv` package manager
 - Access to OCI tenancy (for integration testing)
 - `kubectl` + `helm` (for Kubernetes deployment)
 
+### Local Kafka Setup (Homebrew — No Docker)
+
+```bash
+# Install Java and Kafka via Homebrew
+brew install openjdk@17
+brew install kafka
+
+# One-time: generate cluster ID and format storage
+KAFKA_CLUSTER_ID="$(kafka-storage random-uuid)"
+kafka-storage format --standalone \
+  -t "$KAFKA_CLUSTER_ID" \
+  -c /opt/homebrew/etc/kafka/server.properties
+
+# Start Kafka (runs on localhost:9092, KRaft mode)
+kafka-server-start /opt/homebrew/etc/kafka/server.properties
+
+# Verify (in another terminal)
+kafka-topics --create --topic mcp-test --partitions 3 --bootstrap-server localhost:9092
+
+# Stop when done
+kafka-server-stop
+```
+
+Alternative: If Podman is available, use `podman-compose -f docker/docker-compose.yaml up -d`.
+
 ### Quick Start
+
 ```bash
 # Clone the repo
 cd /path/to/oci-kafka-mcp-server
 
-# Install dependencies
-uv sync
-
-# Start local Kafka
-docker compose -f docker/docker-compose.yaml up -d
+# Create venv and install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 
 # Run the MCP server (STDIO mode)
-uv run oci-kafka-mcp
+.venv/bin/oci-kafka-mcp
 
-# Run tests
-uv run pytest
+# Run tests (no Kafka broker needed — tests use mocks)
+.venv/bin/pytest
+
+# Run tests with coverage
+.venv/bin/pytest --cov=oci_kafka_mcp
 ```
 
 ---

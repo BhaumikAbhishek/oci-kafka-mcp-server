@@ -61,11 +61,11 @@ uv run ruff format src/ tests/
 # Type check
 uv run mypy src/
 
-# Start local Kafka (for development)
-docker compose -f docker/docker-compose.yaml up -d
+# Start local Kafka (for development, using Podman)
+podman-compose -f docker/docker-compose.yaml up -d
 
 # Stop local Kafka
-docker compose -f docker/docker-compose.yaml down
+podman-compose -f docker/docker-compose.yaml down
 ```
 
 ## Configuration
