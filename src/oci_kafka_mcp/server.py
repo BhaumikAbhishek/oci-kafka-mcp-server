@@ -20,6 +20,7 @@ from oci_kafka_mcp.security.policy_guard import PolicyGuard
 from oci_kafka_mcp.tools.cluster import register_cluster_tools
 from oci_kafka_mcp.tools.cluster_management import register_cluster_management_tools
 from oci_kafka_mcp.tools.consumers import register_consumer_tools
+from oci_kafka_mcp.tools.diagnostics import register_diagnostic_tools
 from oci_kafka_mcp.tools.observability import register_observability_tools
 from oci_kafka_mcp.tools.topics import register_topic_tools
 
@@ -68,6 +69,7 @@ def create_server(allow_writes: bool = False) -> FastMCP:
     register_topic_tools(mcp, admin_client, policy_guard, circuit_breaker)
     register_consumer_tools(mcp, consumer_client, policy_guard, circuit_breaker)
     register_observability_tools(mcp, admin_client, circuit_breaker)
+    register_diagnostic_tools(mcp, admin_client, consumer_client, circuit_breaker)
 
     mode = "read-write" if config.allow_writes else "read-only"
     logger.info("OCI Kafka MCP Server initialized in %s mode", mode)
