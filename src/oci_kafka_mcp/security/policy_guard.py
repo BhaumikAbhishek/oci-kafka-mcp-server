@@ -39,8 +39,7 @@ TOOL_RISK_REGISTRY: dict[str, RiskLevel] = {
     "oci_kafka_describe_consumer_group": RiskLevel.LOW,
     # Consumer operations — write
     "oci_kafka_reset_consumer_offset": RiskLevel.HIGH,
-    "oci_kafka_pause_consumer": RiskLevel.MEDIUM,
-    "oci_kafka_resume_consumer": RiskLevel.MEDIUM,
+    "oci_kafka_delete_consumer_group": RiskLevel.HIGH,
     # Observability — read
     "oci_kafka_get_partition_skew": RiskLevel.LOW,
     "oci_kafka_detect_under_replicated_partitions": RiskLevel.LOW,
@@ -54,6 +53,7 @@ CONFIRMATION_REQUIRED: set[str] = {
     "oci_kafka_scale_cluster",
     "oci_kafka_delete_topic",
     "oci_kafka_reset_consumer_offset",
+    "oci_kafka_delete_consumer_group",
 }
 
 # Tools that modify state (require --allow-writes)
@@ -64,8 +64,7 @@ WRITE_TOOLS: set[str] = {
     "oci_kafka_update_topic_config",
     "oci_kafka_delete_topic",
     "oci_kafka_reset_consumer_offset",
-    "oci_kafka_pause_consumer",
-    "oci_kafka_resume_consumer",
+    "oci_kafka_delete_consumer_group",
 }
 
 

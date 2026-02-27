@@ -29,6 +29,7 @@ class TestPolicyGuardReadOnly:
             "oci_kafka_create_cluster",
             "oci_kafka_scale_cluster",
             "oci_kafka_reset_consumer_offset",
+            "oci_kafka_delete_consumer_group",
         ]
         for tool in write_tools:
             result = policy_guard_readonly.check(tool, {})
@@ -51,6 +52,7 @@ class TestPolicyGuardReadWrite:
             "oci_kafka_create_cluster",
             "oci_kafka_scale_cluster",
             "oci_kafka_reset_consumer_offset",
+            "oci_kafka_delete_consumer_group",
         ]
         for tool in high_risk_tools:
             result = policy_guard_readwrite.check(tool, {})

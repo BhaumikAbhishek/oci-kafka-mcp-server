@@ -140,6 +140,109 @@ class KafkaConsumerClient:
             "partitions": lag_details,
         }
 
+    def _resolve_offsets(
+        self,
+        topic_name: str,
+        partitions: list[int],
+        strategy: str,
+    ) -> list[TopicPartition] | dict[str, Any]:
+        """Resolve target offsets for a reset operation.
+
+        Returns a list of TopicPartition with offsets, or an error dict.
+        """
+        if strategy in ("earliest", "latest"):
+            consumer_config = self._config.to_confluent_config()
+            consumer_config["group.id"] = "oci-mcp-offset-resolver"
+            consumer_config["enable.auto.commit"] = "false"
+            consumer = Consumer(consumer_config)
+            try:
+                result = []
+                for p in partitions:
+                    low, high = consumer.get_watermark_offsets(
+                        TopicPartition(topic_name, p), timeout=5
+                    )
+                    offset = low if strategy == "earliest" else high
+                    result.append(TopicPartition(topic_name, p, offset))
+                return result
+            finally:
+                consumer.close()
+
+        try:
+            target_offset = int(strategy)
+        except ValueError:
+            return {
+                "error": f"Invalid strategy '{strategy}'. Use 'earliest', 'latest', or an integer offset."
+            }
+        return [TopicPartition(topic_name, p, target_offset) for p in partitions]
+
+    def reset_consumer_offset(
+        self,
+        group_id: str,
+        topic_name: str,
+        strategy: str = "latest",
+        partition: int | None = None,
+    ) -> dict[str, Any]:
+        """Reset consumer group offsets for a topic.
+
+        The consumer group must be in EMPTY state (no active members).
+
+        Args:
+            group_id: Consumer group to reset.
+            topic_name: Topic to reset offsets for.
+            strategy: One of 'earliest', 'latest', or an integer offset.
+            partition: Specific partition to reset, or None for all partitions.
+        """
+        admin = self._get_admin()
+
+        metadata = admin.list_topics(topic=topic_name, timeout=10)
+        if topic_name not in metadata.topics:
+            return {"error": f"Topic '{topic_name}' not found"}
+
+        topic_meta = metadata.topics[topic_name]
+        partitions = [partition] if partition is not None else list(topic_meta.partitions.keys())
+
+        resolved = self._resolve_offsets(topic_name, partitions, strategy)
+        if isinstance(resolved, dict):
+            return resolved  # error dict
+
+        try:
+            futures = admin.alter_consumer_group_offsets(
+                [{"group_id": group_id, "topic_partitions": resolved}]
+            )
+            result = futures[0].result()
+
+            reset_details = [
+                {"topic": tp.topic, "partition": tp.partition, "error": str(tp.error)}
+                if tp.error is not None
+                else {"topic": tp.topic, "partition": tp.partition, "new_offset": tp.offset}
+                for tp in result.topic_partitions
+            ]
+
+            return {
+                "status": "reset",
+                "group_id": group_id,
+                "topic": topic_name,
+                "strategy": strategy,
+                "partitions_reset": len(reset_details),
+                "details": reset_details,
+            }
+        except KafkaException as e:
+            return {"error": f"Failed to reset offsets: {e}"}
+
+    def delete_consumer_group(self, group_id: str) -> dict[str, Any]:
+        """Delete a consumer group.
+
+        The consumer group must be in EMPTY state (no active members).
+        """
+        admin = self._get_admin()
+
+        try:
+            futures = admin.delete_consumer_groups([group_id])
+            futures[0].result()
+            return {"status": "deleted", "group_id": group_id}
+        except KafkaException as e:
+            return {"error": f"Failed to delete consumer group '{group_id}': {e}"}
+
     def close(self) -> None:
         """Clean up resources."""
         self._admin = None
