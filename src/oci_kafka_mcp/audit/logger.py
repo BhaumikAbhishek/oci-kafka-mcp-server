@@ -6,10 +6,11 @@ import hashlib
 import json
 import logging
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Generator
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger("oci_kafka_mcp.audit")
 
@@ -20,7 +21,7 @@ class AuditEntry:
 
     tool_name: str
     input_params: dict[str, Any]
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     result_status: str = "pending"
     error_message: str | None = None
     execution_time_ms: float = 0.0

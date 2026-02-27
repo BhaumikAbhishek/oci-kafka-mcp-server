@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 from oci_kafka_mcp.kafka.admin_client import KafkaAdminClient
-from oci_kafka_mcp.kafka.connection import CircuitBreaker
-from oci_kafka_mcp.security.policy_guard import PolicyGuard
-from oci_kafka_mcp.server import create_server
 
 
 class TestClusterHealthTool:

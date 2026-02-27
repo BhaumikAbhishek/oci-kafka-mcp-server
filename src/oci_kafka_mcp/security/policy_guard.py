@@ -6,11 +6,11 @@ before executing tools that can modify Kafka state.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class RiskLevel(str, Enum):
+class RiskLevel(StrEnum):
     """Risk classification for MCP tools."""
 
     LOW = "LOW"

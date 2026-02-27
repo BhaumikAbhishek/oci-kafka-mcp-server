@@ -63,7 +63,7 @@ class TestAuditLogger:
 
         with caplog.at_level(logging.INFO, logger="oci_kafka_mcp.audit"):
             try:
-                with audit.audit_tool("fail_tool", {}) as entry:
+                with audit.audit_tool("fail_tool", {}) as _entry:
                     raise ValueError("Something went wrong")
             except ValueError:
                 pass

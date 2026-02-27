@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from confluent_kafka import KafkaException
-from confluent_kafka.admin import (
+from confluent_kafka.admin import (  # type: ignore[attr-defined]
     AdminClient,
     ConfigResource,
     NewTopic,
@@ -34,7 +34,7 @@ class KafkaAdminClient:
         if self._client is None:
             confluent_config = self._config.to_confluent_config()
             confluent_config["client.id"] = "oci-kafka-mcp-admin"
-            self._client = AdminClient(confluent_config)
+            self._client = AdminClient(confluent_config)  # type: ignore[arg-type]
         return self._client
 
     def get_cluster_health(self) -> dict[str, Any]:

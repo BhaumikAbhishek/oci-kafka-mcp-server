@@ -1,6 +1,6 @@
 """Tests for configuration management."""
 
-from oci_kafka_mcp.config import KafkaConfig, ServerConfig, load_config
+from oci_kafka_mcp.config import KafkaConfig, ServerConfig
 from oci_kafka_mcp.security.auth import validate_kafka_auth
 
 

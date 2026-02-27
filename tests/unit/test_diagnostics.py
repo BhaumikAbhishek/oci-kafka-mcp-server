@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from oci_kafka_mcp.tools.diagnostics import _build_lag_report, _build_scaling_report
 

@@ -25,7 +25,7 @@ class KafkaConsumerClient:
         if self._admin is None:
             confluent_config = self._config.to_confluent_config()
             confluent_config["client.id"] = "oci-kafka-mcp-consumer-admin"
-            self._admin = AdminClient(confluent_config)
+            self._admin = AdminClient(confluent_config)  # type: ignore[arg-type]
         return self._admin
 
     def list_consumer_groups(self) -> dict[str, Any]:
@@ -55,7 +55,7 @@ class KafkaConsumerClient:
         futures = admin.describe_consumer_groups([group_id])
 
         try:
-            result = futures[0].result()
+            result = futures[0].result()  # type: ignore[index]
             members = []
             for member in result.members:
                 assignment = []
@@ -92,11 +92,11 @@ class KafkaConsumerClient:
 
         # Get committed offsets for the group
         futures = admin.list_consumer_group_offsets(
-            [{"group_id": group_id}]
+            [{"group_id": group_id}]  # type: ignore[list-item]
         )
 
         try:
-            result = futures[0].result()
+            result = futures[0].result()  # type: ignore[index]
         except (KafkaException, Exception) as e:
             return {"error": f"Failed to get offsets for group '{group_id}': {e}"}
 
@@ -104,7 +104,7 @@ class KafkaConsumerClient:
         consumer_config = self._config.to_confluent_config()
         consumer_config["group.id"] = f"oci-mcp-lag-check-{group_id}"
         consumer_config["enable.auto.commit"] = "false"
-        consumer = Consumer(consumer_config)
+        consumer = Consumer(consumer_config)  # type: ignore[arg-type]
 
         lag_details = []
         total_lag = 0
@@ -154,7 +154,7 @@ class KafkaConsumerClient:
             consumer_config = self._config.to_confluent_config()
             consumer_config["group.id"] = "oci-mcp-offset-resolver"
             consumer_config["enable.auto.commit"] = "false"
-            consumer = Consumer(consumer_config)
+            consumer = Consumer(consumer_config)  # type: ignore[arg-type]
             try:
                 result = []
                 for p in partitions:
@@ -171,7 +171,8 @@ class KafkaConsumerClient:
             target_offset = int(strategy)
         except ValueError:
             return {
-                "error": f"Invalid strategy '{strategy}'. Use 'earliest', 'latest', or an integer offset."
+                "error": f"Invalid strategy '{strategy}'. "
+                "Use 'earliest', 'latest', or an integer offset."
             }
         return [TopicPartition(topic_name, p, target_offset) for p in partitions]
 
@@ -207,9 +208,9 @@ class KafkaConsumerClient:
 
         try:
             futures = admin.alter_consumer_group_offsets(
-                [{"group_id": group_id, "topic_partitions": resolved}]
+                [{"group_id": group_id, "topic_partitions": resolved}]  # type: ignore[list-item]
             )
-            result = futures[0].result()
+            result = futures[0].result()  # type: ignore[index]
 
             reset_details = [
                 {"topic": tp.topic, "partition": tp.partition, "error": str(tp.error)}
@@ -238,7 +239,7 @@ class KafkaConsumerClient:
 
         try:
             futures = admin.delete_consumer_groups([group_id])
-            futures[0].result()
+            futures[0].result()  # type: ignore[index]
             return {"status": "deleted", "group_id": group_id}
         except KafkaException as e:
             return {"error": f"Failed to delete consumer group '{group_id}': {e}"}

@@ -47,6 +47,18 @@ packages = ["src/oci_kafka_mcp"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
+[tool.coverage.run]
+source = ["oci_kafka_mcp"]
+
+[tool.coverage.report]
+fail_under = 45
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
@@ -57,3 +69,10 @@ select = ["E", "F", "I", "N", "W", "UP"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "confluent_kafka.*",
+    "oci.*",
+]
+ignore_missing_imports = true
