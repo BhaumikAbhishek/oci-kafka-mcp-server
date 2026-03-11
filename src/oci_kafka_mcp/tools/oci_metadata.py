@@ -90,9 +90,7 @@ def register_oci_metadata_tools(
         tenancy OCID from the OCI config file as the default compartment.
         """
         effective_compartment_id = (
-            compartment_id
-            or oci_config.compartment_id
-            or kafka_client.get_tenancy_id()
+            compartment_id or oci_config.compartment_id or kafka_client.get_tenancy_id()
         )
         if not effective_compartment_id:
             return json.dumps(

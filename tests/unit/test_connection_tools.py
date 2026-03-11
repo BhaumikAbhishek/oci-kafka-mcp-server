@@ -146,13 +146,15 @@ class TestConnectionTools:
                 break
 
         assert tool_fn is not None
-        result = json.loads(tool_fn(
-            bootstrap_servers="new.broker:9092",
-            security_protocol="SASL_SSL",
-            sasl_mechanism="SCRAM-SHA-512",
-            sasl_username="user1",
-            sasl_password="pass1",
-        ))
+        result = json.loads(
+            tool_fn(
+                bootstrap_servers="new.broker:9092",
+                security_protocol="SASL_SSL",
+                sasl_mechanism="SCRAM-SHA-512",
+                sasl_username="user1",
+                sasl_password="pass1",
+            )
+        )
 
         assert result["status"] == "configured"
         assert result["bootstrap_servers"] == "new.broker:9092"
@@ -202,11 +204,13 @@ class TestConnectionTools:
         from oci_kafka_mcp.tools.connection import register_connection_tools
 
         mcp = FastMCP("test5")
-        admin = KafkaAdminClient(KafkaConfig(
-            bootstrap_servers="real.broker:9092",
-            sasl_username="admin",
-            sasl_password="secret",
-        ))
+        admin = KafkaAdminClient(
+            KafkaConfig(
+                bootstrap_servers="real.broker:9092",
+                sasl_username="admin",
+                sasl_password="secret",
+            )
+        )
         consumer = KafkaConsumerClient(KafkaConfig())
         cb = CircuitBreaker()
         register_connection_tools(mcp, admin, consumer, cb)
@@ -238,12 +242,14 @@ class TestConnectionTools:
             register_connection_tools(mcp, admin, consumer, cb)
 
             tool_fn = mcp._tool_manager._tools["oci_kafka_configure_connection"].fn
-            result = json.loads(tool_fn(
-                bootstrap_servers="broker:9092",
-                sasl_username="user",
-                sasl_password="pass",
-                persist=True,
-            ))
+            result = json.loads(
+                tool_fn(
+                    bootstrap_servers="broker:9092",
+                    sasl_username="user",
+                    sasl_password="pass",
+                    persist=True,
+                )
+            )
 
             assert "persisted_to" in result
             assert persist_path.exists()

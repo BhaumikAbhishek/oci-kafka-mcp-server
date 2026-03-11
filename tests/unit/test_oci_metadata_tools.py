@@ -83,13 +83,9 @@ class TestGetOciClusterInfo:
             "lifecycle_state": "ACTIVE",
         }
 
-        config = OciConfig(
-            cluster_id="ocid1.kafkacluster.oc1.us-chicago-1.default"
-        )
+        config = OciConfig(cluster_id="ocid1.kafkacluster.oc1.us-chicago-1.default")
         tools = _make_tool_functions(client, config)
-        result = json.loads(
-            tools["oci_kafka_get_oci_cluster_info"](cluster_id=None)
-        )
+        result = json.loads(tools["oci_kafka_get_oci_cluster_info"](cluster_id=None))
 
         assert result["display_name"] == "default-cluster"
         client.get_kafka_cluster.assert_called_once_with(
@@ -102,9 +98,7 @@ class TestGetOciClusterInfo:
         config = OciConfig(cluster_id=None)
         tools = _make_tool_functions(client, config)
 
-        result = json.loads(
-            tools["oci_kafka_get_oci_cluster_info"](cluster_id=None)
-        )
+        result = json.loads(tools["oci_kafka_get_oci_cluster_info"](cluster_id=None))
 
         assert "error" in result
         assert "oci_kafka_list_oci_clusters" in result["error"]
@@ -185,18 +179,14 @@ class TestListOciClusters:
 
         tools = _make_tool_functions(client)
         result = json.loads(
-            tools["oci_kafka_list_oci_clusters"](
-                compartment_id="ocid1.compartment.oc1..aaaaaa"
-            )
+            tools["oci_kafka_list_oci_clusters"](compartment_id="ocid1.compartment.oc1..aaaaaa")
         )
 
         assert result["cluster_count"] == 2
         assert len(result["clusters"]) == 2
         assert result["clusters"][0]["display_name"] == "prod-kafka"
         assert result["clusters"][1]["display_name"] == "dev-kafka"
-        client.list_kafka_clusters.assert_called_once_with(
-            "ocid1.compartment.oc1..aaaaaa"
-        )
+        client.list_kafka_clusters.assert_called_once_with("ocid1.compartment.oc1..aaaaaa")
 
     def test_uses_config_default_compartment_id(self) -> None:
         """Should fall back to OCI_COMPARTMENT_ID config when no parameter."""
@@ -208,14 +198,10 @@ class TestListOciClusters:
 
         config = OciConfig(compartment_id="ocid1.compartment.oc1..default")
         tools = _make_tool_functions(client, config)
-        result = json.loads(
-            tools["oci_kafka_list_oci_clusters"](compartment_id=None)
-        )
+        result = json.loads(tools["oci_kafka_list_oci_clusters"](compartment_id=None))
 
         assert result["cluster_count"] == 0
-        client.list_kafka_clusters.assert_called_once_with(
-            "ocid1.compartment.oc1..default"
-        )
+        client.list_kafka_clusters.assert_called_once_with("ocid1.compartment.oc1..default")
 
     def test_falls_back_to_tenancy_id(self) -> None:
         """Should use tenancy OCID when no compartment_id param or env var."""
@@ -228,14 +214,10 @@ class TestListOciClusters:
 
         config = OciConfig(compartment_id=None)
         tools = _make_tool_functions(client, config)
-        result = json.loads(
-            tools["oci_kafka_list_oci_clusters"](compartment_id=None)
-        )
+        result = json.loads(tools["oci_kafka_list_oci_clusters"](compartment_id=None))
 
         assert result["cluster_count"] == 1
-        client.list_kafka_clusters.assert_called_once_with(
-            "ocid1.tenancy.oc1..tenancy123"
-        )
+        client.list_kafka_clusters.assert_called_once_with("ocid1.tenancy.oc1..tenancy123")
 
     def test_error_when_no_compartment_and_no_tenancy(self) -> None:
         """Should return error guiding LLM to ask user."""
@@ -244,9 +226,7 @@ class TestListOciClusters:
         config = OciConfig(compartment_id=None)
         tools = _make_tool_functions(client, config)
 
-        result = json.loads(
-            tools["oci_kafka_list_oci_clusters"](compartment_id=None)
-        )
+        result = json.loads(tools["oci_kafka_list_oci_clusters"](compartment_id=None))
 
         assert "error" in result
         assert "ask the user" in result["error"]
@@ -261,9 +241,7 @@ class TestListOciClusters:
 
         config = OciConfig(compartment_id="ocid1.compartment.oc1..aaaaaa")
         tools = _make_tool_functions(client, config)
-        result = json.loads(
-            tools["oci_kafka_list_oci_clusters"](compartment_id=None)
-        )
+        result = json.loads(tools["oci_kafka_list_oci_clusters"](compartment_id=None))
 
         assert result["error"] == "OCI SDK not configured"
 
@@ -274,9 +252,7 @@ class TestListOciClusters:
 
         config = OciConfig(compartment_id="ocid1.compartment.oc1..aaaaaa")
         tools = _make_tool_functions(client, config)
-        result = json.loads(
-            tools["oci_kafka_list_oci_clusters"](compartment_id=None)
-        )
+        result = json.loads(tools["oci_kafka_list_oci_clusters"](compartment_id=None))
 
         assert "error" in result
         assert "Timeout" in result["error"]

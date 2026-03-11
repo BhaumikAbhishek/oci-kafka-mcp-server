@@ -100,15 +100,15 @@ def register_cluster_config_tools(
                 tenancy OCID from the OCI config file as the default scope.
         """
         effective_compartment = (
-            compartment_id
-            or oci_config.compartment_id
-            or kafka_client.get_tenancy_id()
+            compartment_id or oci_config.compartment_id or kafka_client.get_tenancy_id()
         )
         if not effective_compartment:
-            return json.dumps({
-                "error": "Could not determine OCI compartment. "
-                "Please provide a compartment_id parameter."
-            })
+            return json.dumps(
+                {
+                    "error": "Could not determine OCI compartment. "
+                    "Please provide a compartment_id parameter."
+                }
+            )
         params = {"compartment_id": effective_compartment}
         check = policy_guard.check("oci_kafka_list_cluster_configs", params)
         if not check.allowed:
@@ -175,12 +175,14 @@ def register_cluster_config_tools(
         if not check.allowed:
             return json.dumps({"error": check.reason})
         if check.needs_confirmation:
-            return json.dumps({
-                "status": "confirmation_required",
-                "message": f"Deleting cluster config '{cluster_config_id}' is IRREVERSIBLE. "
-                "All config versions will be permanently deleted. Confirm to proceed.",
-                "risk_level": "HIGH",
-            })
+            return json.dumps(
+                {
+                    "status": "confirmation_required",
+                    "message": f"Deleting cluster config '{cluster_config_id}' is IRREVERSIBLE. "
+                    "All config versions will be permanently deleted. Confirm to proceed.",
+                    "risk_level": "HIGH",
+                }
+            )
         with audit.audit_tool("oci_kafka_delete_cluster_config", params) as entry:
             try:
                 result = kafka_client.delete_kafka_cluster_config(

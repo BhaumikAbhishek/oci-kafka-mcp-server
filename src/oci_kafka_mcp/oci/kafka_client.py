@@ -22,6 +22,7 @@ _OCI_SDK_NOT_CONFIGURED = "OCI SDK not configured"
 # Private serializers
 # -------------------------------------------------------------------------
 
+
 def _serialize_cluster(cluster: Any) -> dict[str, Any]:
     result: dict[str, Any] = {
         "id": cluster.id,
@@ -42,8 +43,7 @@ def _serialize_cluster(cluster: Any) -> dict[str, Any]:
         }
     if cluster.kafka_bootstrap_urls:
         result["bootstrap_urls"] = [
-            {"name": url.name, "url": url.url}
-            for url in cluster.kafka_bootstrap_urls
+            {"name": url.name, "url": url.url} for url in cluster.kafka_bootstrap_urls
         ]
     if getattr(cluster, "cluster_config_id", None):
         result["cluster_config_id"] = cluster.cluster_config_id
@@ -125,8 +125,7 @@ def _serialize_work_request(wr: Any) -> dict[str, Any]:
         result["time_finished"] = str(wr.time_finished)
     if getattr(wr, "resources", None):
         result["resources"] = [
-            {"resource_type": r.resource_type, "resource_id": r.resource_id}
-            for r in wr.resources
+            {"resource_type": r.resource_type, "resource_id": r.resource_id} for r in wr.resources
         ]
     return result
 
@@ -426,9 +425,7 @@ class OciKafkaClient:
         if client is None:
             return {"error": _OCI_SDK_NOT_CONFIGURED}
         try:
-            client.delete_kafka_cluster_config(
-                kafka_cluster_config_id=kafka_cluster_config_id
-            )
+            client.delete_kafka_cluster_config(kafka_cluster_config_id=kafka_cluster_config_id)
             return {"status": "deleted", "kafka_cluster_config_id": kafka_cluster_config_id}
         except Exception as e:
             return {"error": f"Failed to delete cluster config: {e}"}
@@ -476,9 +473,7 @@ class OciKafkaClient:
         except Exception as e:
             return {"error": f"Failed to get config version: {e}"}
 
-    def list_kafka_cluster_config_versions(
-        self, kafka_cluster_config_id: str
-    ) -> dict[str, Any]:
+    def list_kafka_cluster_config_versions(self, kafka_cluster_config_id: str) -> dict[str, Any]:
         """List all versions of a cluster configuration."""
         client = self._get_client()
         if client is None:
@@ -545,16 +540,18 @@ class OciKafkaClient:
             response = client.list_work_requests(**kwargs)
             items = []
             for wr in response.data.items:
-                items.append({
-                    "id": wr.id,
-                    "operation_type": wr.operation_type,
-                    "status": wr.status,
-                    "compartment_id": wr.compartment_id,
-                    "percent_complete": wr.percent_complete,
-                    "time_accepted": str(wr.time_accepted),
-                    "time_started": str(wr.time_started) if wr.time_started else None,
-                    "time_finished": str(wr.time_finished) if wr.time_finished else None,
-                })
+                items.append(
+                    {
+                        "id": wr.id,
+                        "operation_type": wr.operation_type,
+                        "status": wr.status,
+                        "compartment_id": wr.compartment_id,
+                        "percent_complete": wr.percent_complete,
+                        "time_accepted": str(wr.time_accepted),
+                        "time_started": str(wr.time_started) if wr.time_started else None,
+                        "time_finished": str(wr.time_finished) if wr.time_finished else None,
+                    }
+                )
             return {"work_request_count": len(items), "work_requests": items}
         except Exception as e:
             return {"error": f"Failed to list work requests: {e}"}
@@ -577,10 +574,7 @@ class OciKafkaClient:
             return {"error": _OCI_SDK_NOT_CONFIGURED}
         try:
             response = client.list_work_request_errors(work_request_id=work_request_id)
-            errors = [
-                {"code": e.code, "message": e.message}
-                for e in response.data.items
-            ]
+            errors = [{"code": e.code, "message": e.message} for e in response.data.items]
             return {"error_count": len(errors), "errors": errors}
         except Exception as e:
             return {"error": f"Failed to get work request errors: {e}"}

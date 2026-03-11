@@ -66,9 +66,7 @@ def register_work_request_tools(
                 (e.g., a cluster OCID to see all work requests for that cluster).
         """
         effective_compartment = (
-            compartment_id
-            or oci_config.compartment_id
-            or kafka_client.get_tenancy_id()
+            compartment_id or oci_config.compartment_id or kafka_client.get_tenancy_id()
         )
         params = {
             "compartment_id": effective_compartment,
@@ -175,9 +173,7 @@ def register_work_request_tools(
             compartment_id: Optional OCI compartment OCID to scope the shape list.
         """
         effective_compartment = (
-            compartment_id
-            or oci_config.compartment_id
-            or kafka_client.get_tenancy_id()
+            compartment_id or oci_config.compartment_id or kafka_client.get_tenancy_id()
         )
         params = {"compartment_id": effective_compartment}
         check = policy_guard.check("oci_kafka_list_node_shapes", params)

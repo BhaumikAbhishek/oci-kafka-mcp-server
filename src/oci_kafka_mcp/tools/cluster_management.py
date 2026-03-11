@@ -63,12 +63,14 @@ def register_cluster_management_tools(
         if not check.allowed:
             return json.dumps({"error": check.reason})
         if check.needs_confirmation:
-            return json.dumps({
-                "status": "confirmation_required",
-                "message": f"Creating cluster '{display_name}' with {broker_count} brokers "
-                "will provision new OCI infrastructure and incur costs. Confirm to proceed.",
-                "risk_level": "HIGH",
-            })
+            return json.dumps(
+                {
+                    "status": "confirmation_required",
+                    "message": f"Creating cluster '{display_name}' with {broker_count} brokers "
+                    "will provision new OCI infrastructure and incur costs. Confirm to proceed.",
+                    "risk_level": "HIGH",
+                }
+            )
         with audit.audit_tool("oci_kafka_create_cluster", params) as entry:
             try:
                 result = kafka_client.create_kafka_cluster(
@@ -148,12 +150,15 @@ def register_cluster_management_tools(
         if not check.allowed:
             return json.dumps({"error": check.reason})
         if check.needs_confirmation:
-            return json.dumps({
-                "status": "confirmation_required",
-                "message": f"Scaling cluster to {broker_count} brokers will modify live "
-                "infrastructure and may cause temporary partition rebalancing. Confirm to proceed.",
-                "risk_level": "HIGH",
-            })
+            return json.dumps(
+                {
+                    "status": "confirmation_required",
+                    "message": f"Scaling cluster to {broker_count} brokers will modify live "
+                    "infrastructure and may cause temporary partition rebalancing. "
+                    "Confirm to proceed.",
+                    "risk_level": "HIGH",
+                }
+            )
         with audit.audit_tool("oci_kafka_scale_cluster", params) as entry:
             try:
                 # Scaling is done via update with a new BrokerShape node_count.
@@ -163,6 +168,7 @@ def register_cluster_management_tools(
                     entry.result_status = "error"
                     return json.dumps(current, indent=2)
                 from oci.managed_kafka.models import BrokerShape, UpdateKafkaClusterDetails
+
                 shape = current.get("broker_shape", {})
                 new_shape = BrokerShape(
                     node_count=broker_count,
@@ -178,6 +184,7 @@ def register_cluster_management_tools(
                     update_kafka_cluster_details=UpdateKafkaClusterDetails(broker_shape=new_shape),
                 )
                 from oci_kafka_mcp.oci.kafka_client import _serialize_work_request
+
                 result = _serialize_work_request(response.data)
                 entry.result_status = "success"
                 return json.dumps(result, indent=2)
@@ -202,12 +209,14 @@ def register_cluster_management_tools(
         if not check.allowed:
             return json.dumps({"error": check.reason})
         if check.needs_confirmation:
-            return json.dumps({
-                "status": "confirmation_required",
-                "message": f"Deleting cluster '{cluster_id}' is IRREVERSIBLE. "
-                "All topics and data will be permanently lost. Confirm to proceed.",
-                "risk_level": "HIGH",
-            })
+            return json.dumps(
+                {
+                    "status": "confirmation_required",
+                    "message": f"Deleting cluster '{cluster_id}' is IRREVERSIBLE. "
+                    "All topics and data will be permanently lost. Confirm to proceed.",
+                    "risk_level": "HIGH",
+                }
+            )
         with audit.audit_tool("oci_kafka_delete_cluster", params) as entry:
             try:
                 result = kafka_client.delete_kafka_cluster(kafka_cluster_id=cluster_id)
@@ -237,12 +246,14 @@ def register_cluster_management_tools(
         if not check.allowed:
             return json.dumps({"error": check.reason})
         if check.needs_confirmation:
-            return json.dumps({
-                "status": "confirmation_required",
-                "message": f"Moving cluster to compartment '{target_compartment_id}' "
-                "will change which IAM policies control access. Confirm to proceed.",
-                "risk_level": "HIGH",
-            })
+            return json.dumps(
+                {
+                    "status": "confirmation_required",
+                    "message": f"Moving cluster to compartment '{target_compartment_id}' "
+                    "will change which IAM policies control access. Confirm to proceed.",
+                    "risk_level": "HIGH",
+                }
+            )
         with audit.audit_tool("oci_kafka_change_cluster_compartment", params) as entry:
             try:
                 result = kafka_client.change_kafka_cluster_compartment(

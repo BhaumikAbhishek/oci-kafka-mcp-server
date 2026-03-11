@@ -22,21 +22,21 @@ def _write_env_file(path: Path, config: KafkaConfig) -> None:
     """Write connection details to a shell-sourceable env file."""
     lines = [
         "# OCI Kafka MCP — connection configuration",
-        f"export KAFKA_BOOTSTRAP_SERVERS=\"{config.bootstrap_servers}\"",
-        f"export KAFKA_SECURITY_PROTOCOL=\"{config.security_protocol}\"",
+        f'export KAFKA_BOOTSTRAP_SERVERS="{config.bootstrap_servers}"',
+        f'export KAFKA_SECURITY_PROTOCOL="{config.security_protocol}"',
     ]
     if config.sasl_mechanism:
-        lines.append(f"export KAFKA_SASL_MECHANISM=\"{config.sasl_mechanism}\"")
+        lines.append(f'export KAFKA_SASL_MECHANISM="{config.sasl_mechanism}"')
     if config.sasl_username:
-        lines.append(f"export KAFKA_SASL_USERNAME=\"{config.sasl_username}\"")
+        lines.append(f'export KAFKA_SASL_USERNAME="{config.sasl_username}"')
     if config.sasl_password:
-        lines.append(f"export KAFKA_SASL_PASSWORD=\"{config.sasl_password}\"")
+        lines.append(f'export KAFKA_SASL_PASSWORD="{config.sasl_password}"')
     if config.ssl_ca_location:
-        lines.append(f"export KAFKA_SSL_CA_LOCATION=\"{config.ssl_ca_location}\"")
+        lines.append(f'export KAFKA_SSL_CA_LOCATION="{config.ssl_ca_location}"')
     if config.ssl_cert_location:
-        lines.append(f"export KAFKA_SSL_CERT_LOCATION=\"{config.ssl_cert_location}\"")
+        lines.append(f'export KAFKA_SSL_CERT_LOCATION="{config.ssl_cert_location}"')
     if config.ssl_key_location:
-        lines.append(f"export KAFKA_SSL_KEY_LOCATION=\"{config.ssl_key_location}\"")
+        lines.append(f'export KAFKA_SSL_KEY_LOCATION="{config.ssl_key_location}"')
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n")
