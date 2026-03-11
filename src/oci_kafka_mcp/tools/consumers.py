@@ -31,11 +31,13 @@ def _check_write_preconditions(
         return json.dumps({"error": check.reason})
 
     if check.needs_confirmation:
-        return json.dumps({
-            "status": "confirmation_required",
-            "message": confirmation_message,
-            "risk_level": "HIGH",
-        })
+        return json.dumps(
+            {
+                "status": "confirmation_required",
+                "message": confirmation_message,
+                "risk_level": "HIGH",
+            }
+        )
 
     if not circuit_breaker.allow_request():
         return json.dumps({"error": CIRCUIT_OPEN_MSG})
@@ -107,9 +109,7 @@ def _register_consumer_read_tools(
                 circuit_breaker.record_failure()
                 entry.result_status = "error"
                 entry.error_message = str(e)
-                return json.dumps(
-                    {"error": f"Failed to describe consumer group '{group_id}': {e}"}
-                )
+                return json.dumps({"error": f"Failed to describe consumer group '{group_id}': {e}"})
 
     @mcp.tool()
     def oci_kafka_get_consumer_lag(group_id: str) -> str:
@@ -202,9 +202,7 @@ def _register_consumer_write_tools(
                 circuit_breaker.record_failure()
                 entry.result_status = "error"
                 entry.error_message = str(e)
-                return json.dumps(
-                    {"error": f"Failed to reset offsets for group '{group_id}': {e}"}
-                )
+                return json.dumps({"error": f"Failed to reset offsets for group '{group_id}': {e}"})
 
     @mcp.tool()
     def oci_kafka_delete_consumer_group(group_id: str) -> str:
@@ -243,6 +241,4 @@ def _register_consumer_write_tools(
                 circuit_breaker.record_failure()
                 entry.result_status = "error"
                 entry.error_message = str(e)
-                return json.dumps(
-                    {"error": f"Failed to delete consumer group '{group_id}': {e}"}
-                )
+                return json.dumps({"error": f"Failed to delete consumer group '{group_id}': {e}"})

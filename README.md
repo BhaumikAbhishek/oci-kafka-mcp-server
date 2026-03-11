@@ -6,7 +6,7 @@ This MCP server enables LLM agents (Claude, GPT, etc.) to securely manage Kafka 
 
 ## Features
 
-- **18 structured tools** for cluster, topic, consumer, observability, AI diagnostics, and cluster lifecycle operations
+- **42 structured tools** for cluster, topic, consumer, observability, AI diagnostics, OCI metadata, cluster lifecycle, cluster configuration, and work request operations
 - **Read-only by default** — write tools require explicit `--allow-writes` flag
 - **Policy guard** — every tool is risk-classified (LOW/MEDIUM/HIGH); destructive operations require confirmation
 - **AI diagnostic tools** — orchestrate multiple Kafka operations to produce scaling recommendations and lag root cause analyses
@@ -30,22 +30,30 @@ cd oci-kafka-mcp-server
 uv sync
 ```
 
-### Run with local Kafka (development)
+### Run with local Kafka (development, Podman)
 
 ```bash
 # Start a local Kafka broker
-docker compose -f docker/docker-compose.yaml up -d
+podman compose -f docker/docker-compose.yaml up -d
 
 # Run the MCP server (read-only mode)
 uv run oci-kafka-mcp
 
 # Run with write tools enabled
 uv run oci-kafka-mcp --allow-writes
+
+# Stop local Kafka
+podman compose -f docker/docker-compose.yaml down
 ```
 
 ### Configure for OCI Streaming
 
-Set environment variables for your OCI Kafka cluster:
+You can configure OCI Kafka in either of these ways:
+
+1. **Set environment variables up front** (optional)
+2. **Leave variables unset** and let the MCP server request the required values at runtime, then call `oci_kafka_configure_connection`
+
+If you want to pre-configure with environment variables:
 
 ```bash
 export KAFKA_BOOTSTRAP_SERVERS="bootstrap-clstr-XXXXX.kafka.us-chicago-1.oci.oraclecloud.com:9092"
@@ -57,6 +65,17 @@ export KAFKA_SSL_CA_LOCATION="/path/to/ca.pem"
 
 uv run oci-kafka-mcp
 ```
+
+Or use the OCI template file:
+
+```bash
+cp .env.oci.example .env.oci
+# edit .env.oci with your cluster values
+source .env.oci
+uv run oci-kafka-mcp
+```
+
+> Note: `KAFKA_*` variables are **not mandatory** at server startup. If not set, tools will guide the agent/user to provide connection details and use `oci_kafka_configure_connection` before data-plane operations.
 
 ### Use with Claude Desktop
 
@@ -81,21 +100,28 @@ Add to your Claude Desktop MCP configuration (`~/Library/Application Support/Cla
 }
 ```
 
-## Available Tools (18)
+## Available Tools (42)
+
+### Connection Management
+
+| Tool | Description | Risk |
+|------|-------------|------|
+| `oci_kafka_configure_connection` | Set or update Kafka cluster connection details at runtime (no restart needed) | LOW |
+| `oci_kafka_get_connection_info` | Show current connection config with masked password | LOW |
 
 ### Cluster Operations
 
 | Tool | Description | Risk |
 |------|-------------|------|
-| `oci_kafka_get_cluster_health` | Broker status, controller, topic count | LOW |
-| `oci_kafka_get_cluster_config` | Cluster configuration settings | LOW |
+| `oci_kafka_get_cluster_health` | Broker status, controller ID, topic count | LOW |
+| `oci_kafka_get_cluster_config` | Broker-level Kafka configuration settings | LOW |
 
 ### Topic Operations
 
 | Tool | Description | Risk |
 |------|-------------|------|
 | `oci_kafka_list_topics` | List all topics | LOW |
-| `oci_kafka_describe_topic` | Partition details, leaders, replicas, ISR | LOW |
+| `oci_kafka_describe_topic` | Partition details, leaders, replicas, ISR, topic config | LOW |
 | `oci_kafka_create_topic` | Create a topic with partitions and replication factor | MEDIUM |
 | `oci_kafka_update_topic_config` | Update topic configuration (retention, compaction, etc.) | MEDIUM |
 | `oci_kafka_delete_topic` | Delete a topic (requires confirmation) | HIGH |
@@ -105,17 +131,17 @@ Add to your Claude Desktop MCP configuration (`~/Library/Application Support/Cla
 | Tool | Description | Risk |
 |------|-------------|------|
 | `oci_kafka_list_consumer_groups` | List all consumer groups | LOW |
-| `oci_kafka_describe_consumer_group` | Group state, members, coordinator, assignments | LOW |
+| `oci_kafka_describe_consumer_group` | Group state, members, coordinator, partition assignments | LOW |
 | `oci_kafka_get_consumer_lag` | Per-partition lag, committed offsets, end offsets | LOW |
-| `oci_kafka_reset_consumer_offset` | Reset offsets to earliest/latest/specific (requires confirmation) | HIGH |
+| `oci_kafka_reset_consumer_offset` | Reset offsets to earliest/latest/specific offset (requires confirmation) | HIGH |
 | `oci_kafka_delete_consumer_group` | Delete a consumer group (requires confirmation) | HIGH |
 
 ### Observability
 
 | Tool | Description | Risk |
 |------|-------------|------|
-| `oci_kafka_get_partition_skew` | Detect partition imbalance across brokers | LOW |
-| `oci_kafka_detect_under_replicated_partitions` | Find partitions where ISR < replica count | LOW |
+| `oci_kafka_get_partition_skew` | Detect partition leader imbalance across brokers | LOW |
+| `oci_kafka_detect_under_replicated_partitions` | Find partitions where ISR count < replica count | LOW |
 
 ### AI Diagnostics
 
@@ -124,12 +150,55 @@ Add to your Claude Desktop MCP configuration (`~/Library/Application Support/Cla
 | `oci_kafka_recommend_scaling` | Orchestrates health, skew, and replication data into scaling recommendations | LOW |
 | `oci_kafka_analyze_lag_root_cause` | Correlates consumer state, lag, and topology into root cause analysis | LOW |
 
-### Cluster Lifecycle (OCI Control Plane)
+### OCI Control Plane Metadata
 
 | Tool | Description | Risk |
 |------|-------------|------|
-| `oci_kafka_create_cluster` | Provision a new Kafka cluster via OCI SDK | HIGH |
-| `oci_kafka_scale_cluster` | Scale broker count for an existing cluster | HIGH |
+| `oci_kafka_list_oci_clusters` | List all Kafka clusters in an OCI compartment (auto-discovers compartment) | LOW |
+| `oci_kafka_get_oci_cluster_info` | Cluster OCID, lifecycle state, broker shape, bootstrap URLs, tags | LOW |
+
+### Cluster Lifecycle (OCI Control Plane)
+
+Async operations — returns a work request OCID; use `oci_kafka_get_work_request` to poll for completion.
+
+| Tool | Description | Risk |
+|------|-------------|------|
+| `oci_kafka_create_cluster` | Provision a new OCI Kafka cluster (requires confirmation) | HIGH |
+| `oci_kafka_update_cluster` | Update cluster display name, tags, or applied configuration | MEDIUM |
+| `oci_kafka_scale_cluster` | Scale broker count for an existing cluster (requires confirmation) | HIGH |
+| `oci_kafka_delete_cluster` | Permanently delete a cluster and all its data (requires confirmation) | HIGH |
+| `oci_kafka_change_cluster_compartment` | Move a cluster to a different OCI compartment (requires confirmation) | HIGH |
+| `oci_kafka_enable_superuser` | Grant full administrative access to the cluster's superuser | MEDIUM |
+| `oci_kafka_disable_superuser` | Revoke superuser access to restore least-privilege | MEDIUM |
+
+### Cluster Configuration (OCI Control Plane)
+
+Named, versioned sets of Kafka broker settings that can be applied to one or more clusters.
+
+| Tool | Description | Risk |
+|------|-------------|------|
+| `oci_kafka_list_cluster_configs` | List all cluster configurations in a compartment | LOW |
+| `oci_kafka_get_oci_cluster_config` | Get a cluster configuration and its latest version | LOW |
+| `oci_kafka_create_cluster_config` | Create a new named cluster configuration | MEDIUM |
+| `oci_kafka_update_cluster_config` | Update a config's display name or tags | MEDIUM |
+| `oci_kafka_delete_cluster_config` | Delete a configuration and all its versions (requires confirmation) | HIGH |
+| `oci_kafka_change_cluster_config_compartment` | Move a configuration to a different compartment | MEDIUM |
+| `oci_kafka_list_cluster_config_versions` | List all versions of a cluster configuration | LOW |
+| `oci_kafka_get_cluster_config_version` | Get a specific version of a cluster configuration | LOW |
+| `oci_kafka_delete_cluster_config_version` | Delete a specific configuration version | MEDIUM |
+
+### Work Requests & Node Shapes (OCI Control Plane)
+
+Track asynchronous OCI operations returned by cluster lifecycle and configuration tools.
+
+| Tool | Description | Risk |
+|------|-------------|------|
+| `oci_kafka_get_work_request` | Poll status and progress of an async OCI operation | LOW |
+| `oci_kafka_list_work_requests` | List work requests by compartment or resource OCID | LOW |
+| `oci_kafka_get_work_request_errors` | Get error details from a failed work request | LOW |
+| `oci_kafka_get_work_request_logs` | Get timestamped log entries from a work request | LOW |
+| `oci_kafka_cancel_work_request` | Cancel an in-progress work request | MEDIUM |
+| `oci_kafka_list_node_shapes` | List available broker node shapes for cluster provisioning | LOW |
 
 ## Safety Model
 
@@ -142,7 +211,7 @@ Add to your Claude Desktop MCP configuration (`~/Library/Application Support/Cla
 ## Development
 
 ```bash
-# Run tests (68 tests, all unit — no Kafka broker needed)
+# Run tests (92 tests, all unit — no Kafka broker needed)
 uv run pytest
 
 # Run tests with coverage

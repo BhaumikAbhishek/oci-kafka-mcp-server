@@ -32,7 +32,7 @@ class TestPartitionSkew:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.get_partition_skew()
 
         assert result["skew_detected"] is False
@@ -59,7 +59,7 @@ class TestPartitionSkew:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.get_partition_skew()
 
         assert result["skew_detected"] is True
@@ -87,7 +87,7 @@ class TestUnderReplicatedPartitions:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.detect_under_replicated_partitions()
 
         assert result["healthy"] is True
@@ -111,7 +111,7 @@ class TestUnderReplicatedPartitions:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.detect_under_replicated_partitions()
 
         assert result["healthy"] is False

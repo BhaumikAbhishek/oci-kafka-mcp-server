@@ -46,7 +46,7 @@ The server is a **stateless Python process** that translates MCP tool calls into
 
 ### 2.1 What It Does
 
-The MCP server exposes 18 structured tools that perform Kafka cluster administration operations:
+The MCP server exposes 20 structured tools that perform Kafka cluster administration operations:
 
 | Category | Tools | Risk Level |
 |----------|-------|------------|
@@ -57,6 +57,8 @@ The MCP server exposes 18 structured tools that perform Kafka cluster administra
 | **Consumer Read** | list_consumer_groups, describe_consumer_group, get_consumer_lag | LOW |
 | **Consumer Write** | reset_consumer_offset, delete_consumer_group | HIGH |
 | **Observability** | get_partition_skew, detect_under_replicated_partitions | LOW |
+| **AI Diagnostics** | recommend_scaling, analyze_lag_root_cause | LOW |
+| **OCI Metadata** | get_oci_cluster_info, list_oci_clusters | LOW |
 | **Cluster Lifecycle** | create_cluster, scale_cluster | HIGH |
 
 ### 2.2 What It Does NOT Do
@@ -115,7 +117,9 @@ src/oci_kafka_mcp/
 │   ├── cluster_management.py # OCI API: create/scale cluster (2 tools)
 │   ├── topics.py             # Topic CRUD (5 tools)
 │   ├── consumers.py          # Consumer group operations (5 tools)
-│   └── observability.py      # Partition skew, replication health (2 tools)
+│   ├── observability.py      # Partition skew, replication health (2 tools)
+│   ├── diagnostics.py        # AI-powered scaling and lag analysis (2 tools)
+│   └── oci_metadata.py       # OCI control plane metadata (2 tools)
 ├── kafka/                    # Kafka protocol layer
 │   ├── admin_client.py       # confluent-kafka AdminClient wrapper
 │   ├── consumer_client.py    # Consumer group operations wrapper
@@ -566,7 +570,19 @@ OKE Cluster (Customer's VCN)
 - Credentials managed via Kubernetes Secrets and OCI Vault
 - Network policies restrict egress to Kafka brokers only
 
-### 11.3 Phase 3: OCI-Managed Service (Future)
+### 11.3 Multi-Cluster Support (Future Roadmap)
+
+The current architecture follows a **single-cluster model**: one MCP server instance connects to one Kafka cluster via `KAFKA_BOOTSTRAP_SERVERS`. All Kafka protocol tools (health, topics, consumers, observability, diagnostics) operate against that single cluster. The OCI control plane tools (`get_oci_cluster_info`, `list_oci_clusters`) already support multi-cluster by accepting any cluster/compartment OCID as a parameter.
+
+**Current workaround:** Run multiple MCP server instances, each configured with a different cluster's bootstrap URL and credentials.
+
+**Planned approaches for native multi-cluster support:**
+
+1. **Dynamic connection switching** — Accept a `cluster_id` parameter on Kafka protocol tools; create per-request `KafkaAdminClient` connections with a connection pool and per-cluster circuit breakers.
+2. **OCI-native bootstrap discovery** — Use the OCI control plane to resolve a cluster OCID to its bootstrap URL, then connect dynamically. This aligns with the sidecar deployment model where the server runs alongside OCI Streaming.
+3. **Cross-cluster comparison** — A new tool that compares health, topic sets, and consumer lag across multiple clusters in a single response.
+
+### 11.4 Phase 3: OCI-Managed Service (Future)
 
 - Fully managed by OCI Streaming team
 - Multi-tenant architecture with resource isolation
@@ -625,7 +641,8 @@ The following open-source projects were studied for architectural patterns. **No
 | `KAFKA_SSL_KEY_LOCATION` | When mTLS | — | Path to client private key PEM file |
 | `OCI_CONFIG_FILE` | No | `~/.oci/config` | OCI SDK configuration file path |
 | `OCI_PROFILE` | No | `DEFAULT` | OCI config profile name |
-| `OCI_COMPARTMENT_ID` | For OCI tools | — | OCI compartment OCID |
+| `OCI_COMPARTMENT_ID` | No | Tenancy OCID from `~/.oci/config` | OCI compartment OCID (auto-discovered if not set) |
+| `OCI_CLUSTER_ID` | No | — | OCI Kafka cluster (stream pool) OCID (LLM prompted to ask user if not set) |
 
 ## Appendix B: Tool Risk Registry
 
@@ -645,5 +662,9 @@ The following open-source projects were studied for architectural patterns. **No
 | `oci_kafka_delete_consumer_group` | HIGH | Yes | Yes | Delete consumer group (destructive) |
 | `oci_kafka_get_partition_skew` | LOW | No | No | Detect partition imbalance |
 | `oci_kafka_detect_under_replicated_partitions` | LOW | No | No | ISR health check |
+| `oci_kafka_recommend_scaling` | LOW | No | No | AI-powered scaling recommendations |
+| `oci_kafka_analyze_lag_root_cause` | LOW | No | No | AI-powered lag root cause analysis |
+| `oci_kafka_get_oci_cluster_info` | LOW | No | No | OCI cluster metadata (OCID, name, state) |
+| `oci_kafka_list_oci_clusters` | LOW | No | No | List clusters in OCI compartment |
 | `oci_kafka_create_cluster` | HIGH | Yes | Yes | Create OCI Kafka cluster |
 | `oci_kafka_scale_cluster` | HIGH | Yes | Yes | Scale broker count |

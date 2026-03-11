@@ -16,12 +16,29 @@ logger = logging.getLogger(__name__)
 class KafkaConsumerClient:
     """Wrapper for Kafka consumer group operations."""
 
+    _NOT_CONFIGURED_MSG = (
+        "Kafka connection not configured. "
+        "Ask the user for: "
+        "(1) bootstrap_servers — broker address ending in :9092, "
+        "(2) security_protocol — usually SASL_SSL, "
+        "(3) sasl_mechanism — usually SCRAM-SHA-512, "
+        "(4) sasl_username and (5) sasl_password from their OCI Console cluster details. "
+        "Then call oci_kafka_configure_connection with those values."
+    )
+
     def __init__(self, config: KafkaConfig) -> None:
         self._config = config
         self._admin: AdminClient | None = None
 
+    def reconfigure(self, config: KafkaConfig) -> None:
+        """Replace the active configuration and reset the client connection."""
+        self._config = config
+        self._admin = None
+
     def _get_admin(self) -> AdminClient:
         """Get or create AdminClient for consumer group operations."""
+        if not self._config.is_configured:
+            raise RuntimeError(self._NOT_CONFIGURED_MSG)
         if self._admin is None:
             confluent_config = self._config.to_confluent_config()
             confluent_config["client.id"] = "oci-kafka-mcp-consumer-admin"
@@ -37,11 +54,13 @@ class KafkaConsumerClient:
             result = future.result()
             groups = []
             for group in result.valid:
-                groups.append({
-                    "group_id": group.group_id,
-                    "is_simple": group.is_simple_consumer_group,
-                    "state": str(group.state),
-                })
+                groups.append(
+                    {
+                        "group_id": group.group_id,
+                        "is_simple": group.is_simple_consumer_group,
+                        "state": str(group.state),
+                    }
+                )
             return {
                 "group_count": len(groups),
                 "groups": groups,
@@ -64,12 +83,14 @@ class KafkaConsumerClient:
                         {"topic": tp.topic, "partition": tp.partition}
                         for tp in member.assignment.topic_partitions
                     ]
-                members.append({
-                    "member_id": member.member_id,
-                    "client_id": member.client_id,
-                    "host": member.host,
-                    "assignment": assignment,
-                })
+                members.append(
+                    {
+                        "member_id": member.member_id,
+                        "client_id": member.client_id,
+                        "host": member.host,
+                        "assignment": assignment,
+                    }
+                )
 
             return {
                 "group_id": result.group_id,
@@ -104,7 +125,7 @@ class KafkaConsumerClient:
         consumer_config = self._config.to_confluent_config()
         consumer_config["group.id"] = f"oci-mcp-lag-check-{group_id}"
         consumer_config["enable.auto.commit"] = "false"
-        consumer = Consumer(consumer_config)  # type: ignore[arg-type]
+        consumer = Consumer(consumer_config)
 
         lag_details = []
         total_lag = 0
@@ -123,13 +144,15 @@ class KafkaConsumerClient:
                 lag = max(0, high - committed_offset) if committed_offset >= 0 else high - low
                 total_lag += lag
 
-                lag_details.append({
-                    "topic": tp.topic,
-                    "partition": tp.partition,
-                    "committed_offset": committed_offset,
-                    "end_offset": high,
-                    "lag": lag,
-                })
+                lag_details.append(
+                    {
+                        "topic": tp.topic,
+                        "partition": tp.partition,
+                        "committed_offset": committed_offset,
+                        "end_offset": high,
+                        "lag": lag,
+                    }
+                )
         finally:
             consumer.close()
 
@@ -154,7 +177,7 @@ class KafkaConsumerClient:
             consumer_config = self._config.to_confluent_config()
             consumer_config["group.id"] = "oci-mcp-offset-resolver"
             consumer_config["enable.auto.commit"] = "false"
-            consumer = Consumer(consumer_config)  # type: ignore[arg-type]
+            consumer = Consumer(consumer_config)
             try:
                 result = []
                 for p in partitions:

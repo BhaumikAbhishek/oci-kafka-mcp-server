@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 from oci_kafka_mcp.security.policy_guard import PolicyGuard, RiskLevel
 
 
@@ -43,15 +41,17 @@ class TestScaleClusterPolicy:
 class TestCreateClusterOciSdk:
     """Test the OCI SDK integration for cluster creation."""
 
-    @patch("oci_kafka_mcp.tools.cluster_management._create_cluster_via_oci")
-    def test_returns_unavailable_without_sdk(self, mock_create: MagicMock) -> None:
-        """Should return unavailable status when OCI Kafka module is missing."""
-        mock_create.return_value = {
-            "status": "unavailable",
-            "error": "OCI Kafka module (oci.kafka) is not available",
-        }
-        result = mock_create("test-cluster", "comp-id", "subnet-id", 3)
-        assert result["status"] == "unavailable"
+    def test_returns_error_without_sdk(self) -> None:
+        """OciKafkaClient should return an error dict when OCI SDK is unavailable."""
+        from oci_kafka_mcp.oci.kafka_client import OciKafkaClient
+
+        client = OciKafkaClient(config_file="/nonexistent/path", profile="DEFAULT")
+        result = client.create_kafka_cluster(
+            display_name="test",
+            compartment_id="ocid1.compartment.oc1..xxx",
+            subnet_id="ocid1.subnet.oc1..xxx",
+        )
+        assert "error" in result
 
 
 class TestDeleteConsumerGroupPolicy:

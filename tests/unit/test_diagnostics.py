@@ -165,10 +165,20 @@ class TestBuildLagReport:
             "group_id": "my-group",
             "total_lag": 50000,
             "partitions": [
-                {"topic": "orders", "partition": 0, "lag": 25000,
-                 "committed_offset": 0, "end_offset": 25000},
-                {"topic": "orders", "partition": 1, "lag": 25000,
-                 "committed_offset": 0, "end_offset": 25000},
+                {
+                    "topic": "orders",
+                    "partition": 0,
+                    "lag": 25000,
+                    "committed_offset": 0,
+                    "end_offset": 25000,
+                },
+                {
+                    "topic": "orders",
+                    "partition": 1,
+                    "lag": 25000,
+                    "committed_offset": 0,
+                    "end_offset": 25000,
+                },
             ],
         }
 
@@ -203,8 +213,13 @@ class TestBuildLagReport:
             "group_id": "slow-group",
             "total_lag": 100000,
             "partitions": [
-                {"topic": "events", "partition": i, "lag": 8333,
-                 "committed_offset": 0, "end_offset": 8333}
+                {
+                    "topic": "events",
+                    "partition": i,
+                    "lag": 8333,
+                    "committed_offset": 0,
+                    "end_offset": 8333,
+                }
                 for i in range(12)
             ],
         }
@@ -237,12 +252,27 @@ class TestBuildLagReport:
             "group_id": "hot-group",
             "total_lag": 200100,
             "partitions": [
-                {"topic": "payments", "partition": 0, "lag": 200000,
-                 "committed_offset": 0, "end_offset": 200000},
-                {"topic": "payments", "partition": 1, "lag": 50,
-                 "committed_offset": 950, "end_offset": 1000},
-                {"topic": "payments", "partition": 2, "lag": 50,
-                 "committed_offset": 950, "end_offset": 1000},
+                {
+                    "topic": "payments",
+                    "partition": 0,
+                    "lag": 200000,
+                    "committed_offset": 0,
+                    "end_offset": 200000,
+                },
+                {
+                    "topic": "payments",
+                    "partition": 1,
+                    "lag": 50,
+                    "committed_offset": 950,
+                    "end_offset": 1000,
+                },
+                {
+                    "topic": "payments",
+                    "partition": 2,
+                    "lag": 50,
+                    "committed_offset": 950,
+                    "end_offset": 1000,
+                },
             ],
         }
 
@@ -272,8 +302,13 @@ class TestBuildLagReport:
             "group_id": "healthy-group",
             "total_lag": 0,
             "partitions": [
-                {"topic": "orders", "partition": 0, "lag": 0,
-                 "committed_offset": 1000, "end_offset": 1000},
+                {
+                    "topic": "orders",
+                    "partition": 0,
+                    "lag": 0,
+                    "committed_offset": 1000,
+                    "end_offset": 1000,
+                },
             ],
         }
 
@@ -288,9 +323,7 @@ class TestBuildLagReport:
         """Should return error when consumer group describe fails."""
         admin = MagicMock()
         consumer = MagicMock()
-        consumer.describe_consumer_group.return_value = {
-            "error": "Group 'missing' not found"
-        }
+        consumer.describe_consumer_group.return_value = {"error": "Group 'missing' not found"}
 
         report = _build_lag_report(admin, consumer, "missing")
 
@@ -313,14 +346,34 @@ class TestBuildLagReport:
             "group_id": "test-group",
             "total_lag": 161500,
             "partitions": [
-                {"topic": "t", "partition": 0, "lag": 0,
-                 "committed_offset": 100, "end_offset": 100},
-                {"topic": "t", "partition": 1, "lag": 500,
-                 "committed_offset": 500, "end_offset": 1000},
-                {"topic": "t", "partition": 2, "lag": 11000,
-                 "committed_offset": 0, "end_offset": 11000},
-                {"topic": "t", "partition": 3, "lag": 150000,
-                 "committed_offset": 0, "end_offset": 150000},
+                {
+                    "topic": "t",
+                    "partition": 0,
+                    "lag": 0,
+                    "committed_offset": 100,
+                    "end_offset": 100,
+                },
+                {
+                    "topic": "t",
+                    "partition": 1,
+                    "lag": 500,
+                    "committed_offset": 500,
+                    "end_offset": 1000,
+                },
+                {
+                    "topic": "t",
+                    "partition": 2,
+                    "lag": 11000,
+                    "committed_offset": 0,
+                    "end_offset": 11000,
+                },
+                {
+                    "topic": "t",
+                    "partition": 3,
+                    "lag": 150000,
+                    "committed_offset": 0,
+                    "end_offset": 150000,
+                },
             ],
         }
 

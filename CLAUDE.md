@@ -73,7 +73,7 @@ podman-compose -f docker/docker-compose.yaml down
 The server is configured via environment variables:
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| -------- | ----------- | ------- |
 | `KAFKA_BOOTSTRAP_SERVERS` | Kafka broker addresses | `localhost:9092` |
 | `KAFKA_SECURITY_PROTOCOL` | `PLAINTEXT`, `SASL_SSL`, `SSL` | `PLAINTEXT` |
 | `KAFKA_SASL_MECHANISM` | `SCRAM-SHA-512`, `SCRAM-SHA-256`, `PLAIN` | — |
@@ -85,6 +85,7 @@ The server is configured via environment variables:
 | `OCI_CONFIG_FILE` | OCI config file path | `~/.oci/config` |
 | `OCI_PROFILE` | OCI config profile | `DEFAULT` |
 | `OCI_COMPARTMENT_ID` | OCI compartment OCID | — |
+| `OCI_CLUSTER_ID` | OCI Kafka cluster (stream pool) OCID | — |
 | `ALLOW_WRITES` | Enable write tools | `false` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 

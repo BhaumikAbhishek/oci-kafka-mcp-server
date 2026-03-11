@@ -45,26 +45,68 @@ TOOL_RISK_REGISTRY: dict[str, RiskLevel] = {
     "oci_kafka_detect_under_replicated_partitions": RiskLevel.LOW,
     "oci_kafka_recommend_scaling": RiskLevel.LOW,
     "oci_kafka_analyze_lag_root_cause": RiskLevel.LOW,
+    # OCI control plane — read
+    "oci_kafka_get_oci_cluster_info": RiskLevel.LOW,
+    "oci_kafka_list_oci_clusters": RiskLevel.LOW,
+    # OCI cluster lifecycle — write
+    "oci_kafka_update_cluster": RiskLevel.MEDIUM,
+    "oci_kafka_delete_cluster": RiskLevel.HIGH,
+    "oci_kafka_change_cluster_compartment": RiskLevel.HIGH,
+    "oci_kafka_enable_superuser": RiskLevel.MEDIUM,
+    "oci_kafka_disable_superuser": RiskLevel.MEDIUM,
+    # OCI cluster configuration — read
+    "oci_kafka_get_oci_cluster_config": RiskLevel.LOW,
+    "oci_kafka_list_cluster_configs": RiskLevel.LOW,
+    "oci_kafka_get_cluster_config_version": RiskLevel.LOW,
+    "oci_kafka_list_cluster_config_versions": RiskLevel.LOW,
+    # OCI cluster configuration — write
+    "oci_kafka_create_cluster_config": RiskLevel.MEDIUM,
+    "oci_kafka_update_cluster_config": RiskLevel.MEDIUM,
+    "oci_kafka_delete_cluster_config": RiskLevel.HIGH,
+    "oci_kafka_change_cluster_config_compartment": RiskLevel.MEDIUM,
+    "oci_kafka_delete_cluster_config_version": RiskLevel.MEDIUM,
+    # OCI work requests — read
+    "oci_kafka_get_work_request": RiskLevel.LOW,
+    "oci_kafka_list_work_requests": RiskLevel.LOW,
+    "oci_kafka_get_work_request_errors": RiskLevel.LOW,
+    "oci_kafka_get_work_request_logs": RiskLevel.LOW,
+    "oci_kafka_list_node_shapes": RiskLevel.LOW,
+    # OCI work requests — write
+    "oci_kafka_cancel_work_request": RiskLevel.MEDIUM,
 }
 
 # Tools that require explicit confirmation before execution
 CONFIRMATION_REQUIRED: set[str] = {
     "oci_kafka_create_cluster",
     "oci_kafka_scale_cluster",
+    "oci_kafka_delete_cluster",
+    "oci_kafka_change_cluster_compartment",
     "oci_kafka_delete_topic",
     "oci_kafka_reset_consumer_offset",
     "oci_kafka_delete_consumer_group",
+    "oci_kafka_delete_cluster_config",
 }
 
 # Tools that modify state (require --allow-writes)
 WRITE_TOOLS: set[str] = {
     "oci_kafka_create_cluster",
     "oci_kafka_scale_cluster",
+    "oci_kafka_update_cluster",
+    "oci_kafka_delete_cluster",
+    "oci_kafka_change_cluster_compartment",
+    "oci_kafka_enable_superuser",
+    "oci_kafka_disable_superuser",
     "oci_kafka_create_topic",
     "oci_kafka_update_topic_config",
     "oci_kafka_delete_topic",
     "oci_kafka_reset_consumer_offset",
     "oci_kafka_delete_consumer_group",
+    "oci_kafka_create_cluster_config",
+    "oci_kafka_update_cluster_config",
+    "oci_kafka_delete_cluster_config",
+    "oci_kafka_change_cluster_config_compartment",
+    "oci_kafka_delete_cluster_config_version",
+    "oci_kafka_cancel_work_request",
 }
 
 

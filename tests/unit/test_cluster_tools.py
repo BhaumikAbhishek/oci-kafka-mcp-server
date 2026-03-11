@@ -30,7 +30,7 @@ class TestClusterHealthTool:
 
         from oci_kafka_mcp.config import KafkaConfig
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.get_cluster_health()
 
         assert result["cluster_id"] == "test-cluster-123"
@@ -66,7 +66,7 @@ class TestClusterConfigTool:
 
         from oci_kafka_mcp.config import KafkaConfig
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.get_cluster_config()
 
         assert result["broker_id"] == 1

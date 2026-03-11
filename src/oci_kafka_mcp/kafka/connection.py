@@ -59,6 +59,12 @@ class CircuitBreaker:
         self._failure_count = 0
         self._state = CircuitState.CLOSED
 
+    def reset(self) -> None:
+        """Reset the circuit breaker to closed state (e.g., after reconfiguration)."""
+        self._failure_count = 0
+        self._state = CircuitState.CLOSED
+        self._last_failure_time = 0
+
     def record_failure(self) -> None:
         """Record a failed operation."""
         self._failure_count += 1

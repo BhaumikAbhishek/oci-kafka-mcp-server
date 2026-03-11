@@ -95,9 +95,7 @@ def register_diagnostic_tools(
                 circuit_breaker.record_failure()
                 entry.result_status = "error"
                 entry.error_message = str(e)
-                return json.dumps(
-                    {"error": f"Failed to analyze lag for group '{group_id}': {e}"}
-                )
+                return json.dumps({"error": f"Failed to analyze lag for group '{group_id}': {e}"})
 
 
 def _build_scaling_report(admin_client: KafkaAdminClient) -> dict[str, Any]:
@@ -126,69 +124,81 @@ def _build_scaling_report(admin_client: KafkaAdminClient) -> dict[str, Any]:
             if avg_per_broker > 0
             else 0
         )
-        broker_analysis.append({
-            "broker_id": broker_id,
-            "leader_partitions": leader_count,
-            "expected_partitions": round(avg_per_broker, 1),
-            "deviation_percent": deviation_pct,
-            "status": "overloaded" if deviation_pct > 25 else (
-                "underutilized" if deviation_pct < -25 else "balanced"
-            ),
-        })
+        broker_analysis.append(
+            {
+                "broker_id": broker_id,
+                "leader_partitions": leader_count,
+                "expected_partitions": round(avg_per_broker, 1),
+                "deviation_percent": deviation_pct,
+                "status": "overloaded"
+                if deviation_pct > 25
+                else ("underutilized" if deviation_pct < -25 else "balanced"),
+            }
+        )
 
     # 5. Build recommendations
     recommendations = []
 
     if skew.get("skew_detected", False):
-        recommendations.append({
-            "severity": "WARNING",
-            "category": "partition_balance",
-            "finding": f"Partition skew ratio is {skew.get('skew_ratio', 0)}x "
-            f"(threshold: 1.5x). Some brokers are handling significantly more "
-            f"leader partitions than others.",
-            "action": "Run a partition reassignment to rebalance leader partitions "
-            "across brokers. Consider using kafka-reassign-partitions tool.",
-        })
+        recommendations.append(
+            {
+                "severity": "WARNING",
+                "category": "partition_balance",
+                "finding": f"Partition skew ratio is {skew.get('skew_ratio', 0)}x "
+                f"(threshold: 1.5x). Some brokers are handling significantly more "
+                f"leader partitions than others.",
+                "action": "Run a partition reassignment to rebalance leader partitions "
+                "across brokers. Consider using kafka-reassign-partitions tool.",
+            }
+        )
 
     if under_replicated_count > 0:
-        recommendations.append({
-            "severity": "CRITICAL",
-            "category": "replication_health",
-            "finding": f"{under_replicated_count} under-replicated partition(s) detected. "
-            "Data durability is at risk.",
-            "action": "Investigate broker health. Check for disk space issues, network "
-            "problems, or broker failures. Under-replicated partitions may indicate "
-            "a broker needs to be replaced or scaled.",
-        })
+        recommendations.append(
+            {
+                "severity": "CRITICAL",
+                "category": "replication_health",
+                "finding": f"{under_replicated_count} under-replicated partition(s) detected. "
+                "Data durability is at risk.",
+                "action": "Investigate broker health. Check for disk space issues, network "
+                "problems, or broker failures. Under-replicated partitions may indicate "
+                "a broker needs to be replaced or scaled.",
+            }
+        )
 
     partitions_per_broker = total_partitions / broker_count if broker_count > 0 else 0
     if partitions_per_broker > 1000:
-        recommendations.append({
-            "severity": "WARNING",
-            "category": "broker_capacity",
-            "finding": f"Average {partitions_per_broker:.0f} partitions per broker. "
-            "Recommended limit is ~1000 partitions per broker for optimal performance.",
-            "action": f"Consider scaling the cluster from {broker_count} to "
-            f"{max(broker_count + 1, int(total_partitions / 800))} brokers.",
-        })
+        recommendations.append(
+            {
+                "severity": "WARNING",
+                "category": "broker_capacity",
+                "finding": f"Average {partitions_per_broker:.0f} partitions per broker. "
+                "Recommended limit is ~1000 partitions per broker for optimal performance.",
+                "action": f"Consider scaling the cluster from {broker_count} to "
+                f"{max(broker_count + 1, int(total_partitions / 800))} brokers.",
+            }
+        )
 
     if broker_count < 3:
-        recommendations.append({
-            "severity": "WARNING",
-            "category": "high_availability",
-            "finding": f"Cluster has only {broker_count} broker(s). "
-            "Minimum 3 brokers recommended for high availability.",
-            "action": "Scale the cluster to at least 3 brokers for production workloads.",
-        })
+        recommendations.append(
+            {
+                "severity": "WARNING",
+                "category": "high_availability",
+                "finding": f"Cluster has only {broker_count} broker(s). "
+                "Minimum 3 brokers recommended for high availability.",
+                "action": "Scale the cluster to at least 3 brokers for production workloads.",
+            }
+        )
 
     if not recommendations:
-        recommendations.append({
-            "severity": "INFO",
-            "category": "overall",
-            "finding": "Cluster is healthy. No scaling actions needed at this time.",
-            "action": "Continue monitoring. Re-run this analysis after adding new topics "
-            "or when traffic patterns change.",
-        })
+        recommendations.append(
+            {
+                "severity": "INFO",
+                "category": "overall",
+                "finding": "Cluster is healthy. No scaling actions needed at this time.",
+                "action": "Continue monitoring. Re-run this analysis after adding new topics "
+                "or when traffic patterns change.",
+            }
+        )
 
     return {
         "report_type": "scaling_recommendation",
@@ -284,59 +294,71 @@ def _build_lag_report(
     group_state = group_info.get("state", "unknown")
 
     if group_state == "Empty" or member_count == 0:
-        potential_causes.append({
-            "likelihood": "HIGH",
-            "cause": "Consumer group has no active members",
-            "detail": f"Group state is '{group_state}' with {member_count} members. "
-            "No consumers are processing messages.",
-            "remediation": "Start consumer application instances or check for crashes/restarts.",
-        })
+        potential_causes.append(
+            {
+                "likelihood": "HIGH",
+                "cause": "Consumer group has no active members",
+                "detail": f"Group state is '{group_state}' with {member_count} members. "
+                "No consumers are processing messages.",
+                "remediation": (
+                    "Start consumer application instances or check for crashes/restarts."
+                ),
+            }
+        )
 
     if member_count > 0:
         for topic_name in topics_involved:
             td = topic_details.get(topic_name, {})
             partition_count = td.get("partition_count", 0)
             if partition_count > 0 and member_count < partition_count:
-                potential_causes.append({
-                    "likelihood": "MEDIUM",
-                    "cause": f"Under-provisioned consumers for topic '{topic_name}'",
-                    "detail": f"Topic has {partition_count} partitions but group has only "
-                    f"{member_count} consumer(s). Maximum parallelism is limited to "
-                    f"{member_count} partitions being consumed simultaneously.",
-                    "remediation": f"Scale consumer instances to at least {partition_count} "
-                    "to match partition count for maximum parallelism.",
-                })
+                potential_causes.append(
+                    {
+                        "likelihood": "MEDIUM",
+                        "cause": f"Under-provisioned consumers for topic '{topic_name}'",
+                        "detail": f"Topic has {partition_count} partitions but group has only "
+                        f"{member_count} consumer(s). Maximum parallelism is limited to "
+                        f"{member_count} partitions being consumed simultaneously.",
+                        "remediation": f"Scale consumer instances to at least {partition_count} "
+                        "to match partition count for maximum parallelism.",
+                    }
+                )
 
     if hot_partitions:
         hot_partition_ids = [f"{p['topic']}:{p['partition']}" for p in hot_partitions[:5]]
-        potential_causes.append({
-            "likelihood": "MEDIUM",
-            "cause": "Hot partitions with disproportionate lag",
-            "detail": f"Partitions {', '.join(hot_partition_ids)} have significantly higher "
-            "lag than others. This may indicate uneven message distribution (key skew) "
-            "or slow processing for specific partition keys.",
-            "remediation": "Review producer partitioning strategy. Check if specific "
-            "message keys are causing hot partitions. Consider repartitioning the topic.",
-        })
+        potential_causes.append(
+            {
+                "likelihood": "MEDIUM",
+                "cause": "Hot partitions with disproportionate lag",
+                "detail": f"Partitions {', '.join(hot_partition_ids)} have significantly higher "
+                "lag than others. This may indicate uneven message distribution (key skew) "
+                "or slow processing for specific partition keys.",
+                "remediation": "Review producer partitioning strategy. Check if specific "
+                "message keys are causing hot partitions. Consider repartitioning the topic.",
+            }
+        )
 
     if total_lag > 0 and not potential_causes:
-        potential_causes.append({
-            "likelihood": "MEDIUM",
-            "cause": "Consumer processing is slower than producer throughput",
-            "detail": f"Total lag is {total_lag} across {len(partitions)} partitions. "
-            "Consumers may be processing messages slower than producers are writing.",
-            "remediation": "Profile consumer processing time. Consider optimizing "
-            "consumer logic, increasing consumer instances, or batching.",
-        })
+        potential_causes.append(
+            {
+                "likelihood": "MEDIUM",
+                "cause": "Consumer processing is slower than producer throughput",
+                "detail": f"Total lag is {total_lag} across {len(partitions)} partitions. "
+                "Consumers may be processing messages slower than producers are writing.",
+                "remediation": "Profile consumer processing time. Consider optimizing "
+                "consumer logic, increasing consumer instances, or batching.",
+            }
+        )
 
     if not potential_causes:
-        potential_causes.append({
-            "likelihood": "INFO",
-            "cause": "No lag detected — consumer group is caught up",
-            "detail": "All partitions have zero lag. The consumer group is processing "
-            "messages at or above the producer rate.",
-            "remediation": "No action needed. Continue monitoring.",
-        })
+        potential_causes.append(
+            {
+                "likelihood": "INFO",
+                "cause": "No lag detected — consumer group is caught up",
+                "detail": "All partitions have zero lag. The consumer group is processing "
+                "messages at or above the producer rate.",
+                "remediation": "No action needed. Continue monitoring.",
+            }
+        )
 
     return {
         "report_type": "lag_root_cause_analysis",

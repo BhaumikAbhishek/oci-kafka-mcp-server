@@ -163,13 +163,15 @@ def register_topic_tools(
             return json.dumps({"error": check.reason})
 
         if check.needs_confirmation:
-            return json.dumps({
-                "status": "confirmation_required",
-                "message": f"Deleting topic '{topic_name}' is a HIGH RISK operation. "
-                "This will permanently delete the topic and all its data. "
-                "Please confirm by calling this tool again with confirmation.",
-                "risk_level": "HIGH",
-            })
+            return json.dumps(
+                {
+                    "status": "confirmation_required",
+                    "message": f"Deleting topic '{topic_name}' is a HIGH RISK operation. "
+                    "This will permanently delete the topic and all its data. "
+                    "Please confirm by calling this tool again with confirmation.",
+                    "risk_level": "HIGH",
+                }
+            )
 
         if not circuit_breaker.allow_request():
             return json.dumps({"error": "Circuit breaker is open. Kafka may be unavailable."})

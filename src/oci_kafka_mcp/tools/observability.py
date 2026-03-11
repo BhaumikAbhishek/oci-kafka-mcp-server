@@ -70,6 +70,4 @@ def register_observability_tools(
                 circuit_breaker.record_failure()
                 entry.result_status = "error"
                 entry.error_message = str(e)
-                return json.dumps(
-                    {"error": f"Failed to detect under-replicated partitions: {e}"}
-                )
+                return json.dumps({"error": f"Failed to detect under-replicated partitions: {e}"})

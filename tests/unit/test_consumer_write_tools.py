@@ -13,15 +13,11 @@ class TestResetConsumerOffset:
 
     @patch("oci_kafka_mcp.kafka.consumer_client.Consumer")
     @patch("oci_kafka_mcp.kafka.consumer_client.AdminClient")
-    def test_reset_to_latest(
-        self, mock_admin_cls: MagicMock, mock_consumer_cls: MagicMock
-    ) -> None:
+    def test_reset_to_latest(self, mock_admin_cls: MagicMock, mock_consumer_cls: MagicMock) -> None:
         """Should reset offsets to latest (end) for all partitions."""
         # Mock topic metadata
         mock_metadata = MagicMock()
-        mock_metadata.topics = {
-            "orders": MagicMock(partitions={0: MagicMock(), 1: MagicMock()})
-        }
+        mock_metadata.topics = {"orders": MagicMock(partitions={0: MagicMock(), 1: MagicMock()})}
 
         # Mock watermark offsets
         mock_consumer = MagicMock()
@@ -41,7 +37,7 @@ class TestResetConsumerOffset:
         mock_client.alter_consumer_group_offsets.return_value = [mock_future]
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.reset_consumer_offset("my-group", "orders", "latest")
 
         assert result["status"] == "reset"
@@ -58,9 +54,7 @@ class TestResetConsumerOffset:
     ) -> None:
         """Should reset offsets to earliest (beginning) for all partitions."""
         mock_metadata = MagicMock()
-        mock_metadata.topics = {
-            "orders": MagicMock(partitions={0: MagicMock()})
-        }
+        mock_metadata.topics = {"orders": MagicMock(partitions={0: MagicMock()})}
 
         mock_consumer = MagicMock()
         mock_consumer.get_watermark_offsets.return_value = (0, 500)
@@ -77,7 +71,7 @@ class TestResetConsumerOffset:
         mock_client.alter_consumer_group_offsets.return_value = [mock_future]
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.reset_consumer_offset("my-group", "orders", "earliest")
 
         assert result["status"] == "reset"
@@ -88,9 +82,7 @@ class TestResetConsumerOffset:
     def test_reset_to_specific_offset(self, mock_admin_cls: MagicMock) -> None:
         """Should reset offsets to a specific integer offset."""
         mock_metadata = MagicMock()
-        mock_metadata.topics = {
-            "orders": MagicMock(partitions={0: MagicMock(), 1: MagicMock()})
-        }
+        mock_metadata.topics = {"orders": MagicMock(partitions={0: MagicMock(), 1: MagicMock()})}
 
         mock_tp0 = MagicMock(topic="orders", partition=0, offset=42, error=None)
         mock_tp1 = MagicMock(topic="orders", partition=1, offset=42, error=None)
@@ -104,7 +96,7 @@ class TestResetConsumerOffset:
         mock_client.alter_consumer_group_offsets.return_value = [mock_future]
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.reset_consumer_offset("my-group", "orders", "42")
 
         assert result["status"] == "reset"
@@ -115,15 +107,13 @@ class TestResetConsumerOffset:
     def test_reset_invalid_strategy(self, mock_admin_cls: MagicMock) -> None:
         """Should return error for invalid strategy string."""
         mock_metadata = MagicMock()
-        mock_metadata.topics = {
-            "orders": MagicMock(partitions={0: MagicMock()})
-        }
+        mock_metadata.topics = {"orders": MagicMock(partitions={0: MagicMock()})}
 
         mock_client = MagicMock()
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.reset_consumer_offset("my-group", "orders", "invalid")
 
         assert "error" in result
@@ -139,7 +129,7 @@ class TestResetConsumerOffset:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.reset_consumer_offset("my-group", "nonexistent", "latest")
 
         assert "error" in result
@@ -159,7 +149,7 @@ class TestDeleteConsumerGroup:
         mock_client.delete_consumer_groups.return_value = [mock_future]
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.delete_consumer_group("old-group")
 
         assert result["status"] == "deleted"
@@ -179,7 +169,7 @@ class TestDeleteConsumerGroup:
         mock_client.delete_consumer_groups.return_value = [mock_future]
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.delete_consumer_group("active-group")
 
         assert "error" in result

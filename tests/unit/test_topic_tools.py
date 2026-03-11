@@ -29,7 +29,7 @@ class TestListTopics:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.list_topics()
 
         assert result["topic_count"] == 2
@@ -75,7 +75,7 @@ class TestDescribeTopic:
         mock_client.describe_configs.return_value = {MagicMock(): mock_future}
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.describe_topic("orders")
 
         assert result["name"] == "orders"
@@ -96,7 +96,7 @@ class TestDescribeTopic:
         mock_client.list_topics.return_value = mock_metadata
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.describe_topic("nonexistent")
 
         assert "error" in result
@@ -115,7 +115,7 @@ class TestCreateTopic:
         mock_client.create_topics.return_value = {"test-topic": mock_future}
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.create_topic("test-topic", num_partitions=6, replication_factor=3)
 
         assert result["status"] == "created"
@@ -137,7 +137,7 @@ class TestDeleteTopic:
         mock_client.delete_topics.return_value = {"test-topic": mock_future}
         mock_admin_cls.return_value = mock_client
 
-        admin = KafkaAdminClient(KafkaConfig())
+        admin = KafkaAdminClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = admin.delete_topic("test-topic")
 
         assert result["status"] == "deleted"

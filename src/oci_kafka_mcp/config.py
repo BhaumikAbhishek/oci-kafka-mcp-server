@@ -31,6 +31,15 @@ class KafkaConfig(BaseSettings):
     )
     ssl_key_location: str | None = Field(default=None, description="Client key path for mTLS")
 
+    @property
+    def is_configured(self) -> bool:
+        """Return True if a Kafka cluster has been explicitly configured.
+
+        Returns False when only the default localhost:9092 placeholder is set,
+        indicating the user needs to call oci_kafka_configure_connection first.
+        """
+        return self.bootstrap_servers != "localhost:9092"
+
     def to_confluent_config(self) -> dict[str, str]:
         """Convert to confluent-kafka configuration dictionary."""
         config: dict[str, str] = {
@@ -60,6 +69,7 @@ class OciConfig(BaseSettings):
     config_file: str = Field(default="~/.oci/config", description="OCI config file path")
     profile: str = Field(default="DEFAULT", description="OCI config profile name")
     compartment_id: str | None = Field(default=None, description="OCI compartment OCID")
+    cluster_id: str | None = Field(default=None, description="OCI Kafka cluster (stream pool) OCID")
 
 
 class ServerConfig(BaseSettings):

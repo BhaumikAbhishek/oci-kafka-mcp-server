@@ -34,7 +34,7 @@ class TestListConsumerGroups:
         mock_client.list_consumer_groups.return_value = mock_future
         mock_admin_cls.return_value = mock_client
 
-        consumer = KafkaConsumerClient(KafkaConfig())
+        consumer = KafkaConsumerClient(KafkaConfig(bootstrap_servers="test.broker:9092"))
         result = consumer.list_consumer_groups()
 
         assert result["group_count"] == 2

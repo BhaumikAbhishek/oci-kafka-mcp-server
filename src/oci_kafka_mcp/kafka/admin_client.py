@@ -25,12 +25,30 @@ class KafkaAdminClient:
     connection management and error handling.
     """
 
+    _NO_RESULT_MSG = "No result returned"
+    _NOT_CONFIGURED_MSG = (
+        "Kafka connection not configured. "
+        "Ask the user for: "
+        "(1) bootstrap_servers — broker address ending in :9092, "
+        "(2) security_protocol — usually SASL_SSL, "
+        "(3) sasl_mechanism — usually SCRAM-SHA-512, "
+        "(4) sasl_username and (5) sasl_password from their OCI Console cluster details. "
+        "Then call oci_kafka_configure_connection with those values."
+    )
+
     def __init__(self, config: KafkaConfig) -> None:
         self._config = config
         self._client: AdminClient | None = None
 
+    def reconfigure(self, config: KafkaConfig) -> None:
+        """Replace the active configuration and reset the client connection."""
+        self._config = config
+        self._client = None
+
     def _get_client(self) -> AdminClient:
         """Get or create the AdminClient instance."""
+        if not self._config.is_configured:
+            raise RuntimeError(self._NOT_CONFIGURED_MSG)
         if self._client is None:
             confluent_config = self._config.to_confluent_config()
             confluent_config["client.id"] = "oci-kafka-mcp-admin"
@@ -44,11 +62,13 @@ class KafkaAdminClient:
 
         brokers = []
         for broker_id, broker in metadata.brokers.items():
-            brokers.append({
-                "id": broker_id,
-                "host": broker.host,
-                "port": broker.port,
-            })
+            brokers.append(
+                {
+                    "id": broker_id,
+                    "host": broker.host,
+                    "port": broker.port,
+                }
+            )
 
         return {
             "cluster_id": metadata.cluster_id,
@@ -100,10 +120,12 @@ class KafkaAdminClient:
         for topic_name, topic_metadata in metadata.topics.items():
             if topic_metadata.error is not None:
                 continue
-            topics.append({
-                "name": topic_name,
-                "partition_count": len(topic_metadata.partitions),
-            })
+            topics.append(
+                {
+                    "name": topic_name,
+                    "partition_count": len(topic_metadata.partitions),
+                }
+            )
 
         return {
             "topic_count": len(topics),
@@ -124,12 +146,14 @@ class KafkaAdminClient:
 
         partitions = []
         for part_id, part_meta in topic_meta.partitions.items():
-            partitions.append({
-                "id": part_id,
-                "leader": part_meta.leader,
-                "replicas": list(part_meta.replicas),
-                "in_sync_replicas": list(part_meta.isrs),
-            })
+            partitions.append(
+                {
+                    "id": part_id,
+                    "leader": part_meta.leader,
+                    "replicas": list(part_meta.replicas),
+                    "in_sync_replicas": list(part_meta.isrs),
+                }
+            )
 
         # Get topic config
         resource = ConfigResource(ResourceType.TOPIC, topic_name)
@@ -175,7 +199,7 @@ class KafkaAdminClient:
             except KafkaException as e:
                 return {"status": "error", "topic": topic, "error": str(e)}
 
-        return {"status": "error", "error": "No result returned"}
+        return {"status": "error", "error": self._NO_RESULT_MSG}
 
     def delete_topic(self, topic_name: str) -> dict[str, Any]:
         """Delete a topic."""
@@ -189,7 +213,7 @@ class KafkaAdminClient:
             except KafkaException as e:
                 return {"status": "error", "topic": topic, "error": str(e)}
 
-        return {"status": "error", "error": "No result returned"}
+        return {"status": "error", "error": self._NO_RESULT_MSG}
 
     def update_topic_config(self, topic_name: str, configs: dict[str, str]) -> dict[str, Any]:
         """Update topic configuration."""
@@ -211,7 +235,7 @@ class KafkaAdminClient:
             except KafkaException as e:
                 return {"status": "error", "topic": topic_name, "error": str(e)}
 
-        return {"status": "error", "error": "No result returned"}
+        return {"status": "error", "error": self._NO_RESULT_MSG}
 
     def get_partition_skew(self, topic_name: str | None = None) -> dict[str, Any]:
         """Detect partition imbalance across brokers.
@@ -269,13 +293,15 @@ class KafkaAdminClient:
             for part_id, part_meta in topic_meta.partitions.items():
                 total_partitions += 1
                 if len(part_meta.isrs) < len(part_meta.replicas):
-                    under_replicated.append({
-                        "topic": topic_name,
-                        "partition": part_id,
-                        "replicas": list(part_meta.replicas),
-                        "in_sync_replicas": list(part_meta.isrs),
-                        "missing_replicas": len(part_meta.replicas) - len(part_meta.isrs),
-                    })
+                    under_replicated.append(
+                        {
+                            "topic": topic_name,
+                            "partition": part_id,
+                            "replicas": list(part_meta.replicas),
+                            "in_sync_replicas": list(part_meta.isrs),
+                            "missing_replicas": len(part_meta.replicas) - len(part_meta.isrs),
+                        }
+                    )
 
         return {
             "total_partitions": total_partitions,
