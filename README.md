@@ -77,14 +77,21 @@ uv run oci-kafka-mcp
 
 > Note: `KAFKA_*` variables are **not mandatory** at server startup. If not set, tools will guide the agent/user to provide connection details and use `oci_kafka_configure_connection` before data-plane operations.
 
-### Use with Claude Desktop
+### Use with an MCP Client
 
-Add to your Claude Desktop MCP configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+This server works with any MCP-compatible client. Oracle recommends [Cline](https://github.com/cline/cline), [Cursor](https://www.cursor.com/), and [MCPHost](https://github.com/oracle/mcp). See the [Oracle MCP client configuration guide](https://github.com/oracle/mcp/tree/main?tab=readme-ov-file#client-configuration) for details.
+
+The `env` block below is optional — if omitted, the server will prompt the agent to call `oci_kafka_configure_connection` with your cluster details at runtime.
+
+#### Cline (VS Code extension)
+
+Add to your Cline MCP settings:
 
 ```json
 {
   "mcpServers": {
     "oci-kafka": {
+      "type": "stdio",
       "command": "/path/to/oci-kafka-mcp-server/.venv/bin/oci-kafka-mcp",
       "args": ["--allow-writes"],
       "env": {
@@ -92,12 +99,63 @@ Add to your Claude Desktop MCP configuration (`~/Library/Application Support/Cla
         "KAFKA_SECURITY_PROTOCOL": "SASL_SSL",
         "KAFKA_SASL_MECHANISM": "SCRAM-SHA-512",
         "KAFKA_SASL_USERNAME": "your-username",
-        "KAFKA_SASL_PASSWORD": "your-password",
-        "KAFKA_SSL_CA_LOCATION": "/path/to/ca.pem"
+        "KAFKA_SASL_PASSWORD": "your-password"
       }
     }
   }
 }
+```
+
+#### Cursor
+
+Add to `.cursor/mcp.json` (project-level) or `~/.cursor/mcp.json` (global):
+
+```json
+{
+  "mcpServers": {
+    "oci-kafka": {
+      "type": "stdio",
+      "command": "/path/to/oci-kafka-mcp-server/.venv/bin/oci-kafka-mcp",
+      "args": ["--allow-writes"],
+      "env": {
+        "KAFKA_BOOTSTRAP_SERVERS": "your-bootstrap:9092",
+        "KAFKA_SECURITY_PROTOCOL": "SASL_SSL",
+        "KAFKA_SASL_MECHANISM": "SCRAM-SHA-512",
+        "KAFKA_SASL_USERNAME": "your-username",
+        "KAFKA_SASL_PASSWORD": "your-password"
+      }
+    }
+  }
+}
+```
+
+#### MCPHost
+
+Add to your MCPHost configuration file (e.g., `~/.mcphost.json`):
+
+```json
+{
+  "mcpServers": {
+    "oci-kafka": {
+      "type": "stdio",
+      "command": "/path/to/oci-kafka-mcp-server/.venv/bin/oci-kafka-mcp",
+      "args": ["--allow-writes"],
+      "env": {
+        "KAFKA_BOOTSTRAP_SERVERS": "your-bootstrap:9092",
+        "KAFKA_SECURITY_PROTOCOL": "SASL_SSL",
+        "KAFKA_SASL_MECHANISM": "SCRAM-SHA-512",
+        "KAFKA_SASL_USERNAME": "your-username",
+        "KAFKA_SASL_PASSWORD": "your-password"
+      }
+    }
+  }
+}
+```
+
+Then start MCPHost with:
+
+```bash
+mcphost -m ollama:<model> --config ~/.mcphost.json
 ```
 
 ## Available Tools (42)
