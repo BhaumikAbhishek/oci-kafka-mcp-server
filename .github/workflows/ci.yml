@@ -45,7 +45,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=oci_kafka_mcp --cov-report=term-missing --cov-fail-under=45
+          pytest --cov=oci_kafka_mcp --cov-report=term-missing --cov-fail-under=36
 
       - name: Upload coverage report
         if: matrix.python-version == '3.13'

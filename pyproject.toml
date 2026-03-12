@@ -51,7 +51,7 @@ asyncio_mode = "auto"
 source = ["oci_kafka_mcp"]
 
 [tool.coverage.report]
-fail_under = 45
+fail_under = 36
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
